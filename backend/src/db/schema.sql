@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS books (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS book_chunks (
+    id TEXT PRIMARY KEY,
+    book_id TEXT NOT NULL,
+    content TEXT NOT NULL,
+    word_count INTEGER NOT NULL,
+    word_count_cumulative INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
