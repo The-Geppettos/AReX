@@ -12,9 +12,7 @@ const BookList: React.FC = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        console.log("Fetching books...");
         const bookList = await ExtAPI.getBookList();
-        console.log("Received books:", bookList);
         setBooks(bookList);
         setLoading(false);
       } catch (err) {
@@ -29,8 +27,6 @@ const BookList: React.FC = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
-
-  console.log("Rendering books:", books);
 
   return (
     <div className="book-list">

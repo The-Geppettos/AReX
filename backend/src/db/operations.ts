@@ -1,6 +1,6 @@
 import { db } from "./index";
 import { v4 as uuidv4 } from "uuid";
-import { Book, BookChunk } from "@shared/types";
+import { Book, BookChunk, BookDetail } from "@shared/types";
 
 // Helper function to generate UUID
 const generateId = () => uuidv4();
@@ -17,11 +17,20 @@ export const bookOperations = {
     }));
   },
 
-  async getById(id: string): Promise<Book | null> {
+  async getById(id: string): Promise<BookDetail | null> {
     const book = await db.get<Book>("SELECT * FROM books WHERE id = ?", [id]);
+
+    const maxOffset = await db.get<{ max_offset: number }>(
+      "SELECT MAX(offset_end) AS max_offset FROM book_chunks WHERE book_id = ?",
+      [id],
+    );
+
     if (!book) return null;
 
-    return book;
+    return {
+      ...book,
+      max_offset: maxOffset ? maxOffset.max_offset : 0,
+    };
   },
 
   async createBook(title: string, author: string): Promise<Book> {

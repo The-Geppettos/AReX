@@ -5,6 +5,10 @@ export interface Book {
   created_at: string;
 }
 
+export interface BookDetail extends Book {
+  max_offset: number;
+}
+
 export interface BookChunk {
   id: string;
   book_id: string;

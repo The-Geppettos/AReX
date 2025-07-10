@@ -1,4 +1,4 @@
-import { Book, BookChunk } from "@shared/types";
+import { Book, BookChunk, BookDetail } from "@shared/types";
 import axios from "axios";
 
 const request = axios.create({
@@ -11,7 +11,7 @@ class ExtAPI {
     return response.data;
   }
 
-  static async getBookInfo(id: string): Promise<Book> {
+  static async getBookInfo(id: string): Promise<BookDetail> {
     const response = await request.get(`/api/books/${id}`);
     return response.data;
   }
