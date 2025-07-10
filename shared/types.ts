@@ -5,16 +5,13 @@ export interface Book {
   created_at: string;
 }
 
-export interface BookWithChunkList extends Book {
-  chunk_list: string[];
-}
-
 export interface BookChunk {
   id: string;
   book_id: string;
-  content: string;
-  word_count: number;
-  word_count_cumulative: number;
+  chunk: string;
+  chunk_length: number;
+  offset_start: number;
+  offset_end: number;
   created_at: string;
 }
 

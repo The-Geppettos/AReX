@@ -1,19 +1,19 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import BookReader from './components/BookReader';
-import BookList from './components/BookList';
-import { useParams } from 'react-router-dom';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import BookReader from "./components/BookReader";
+import BookList from "./components/BookList";
+import { useParams } from "react-router-dom";
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: "light",
     primary: {
-      main: '#1976d2',
+      main: "#1976d2",
     },
     secondary: {
-      main: '#dc004e',
+      main: "#dc004e",
     },
   },
 });
@@ -21,7 +21,7 @@ const theme = createTheme({
 // Create a wrapper component to access URL parameters
 const BookReaderWrapper = () => {
   const { bookId } = useParams();
-  return <BookReader bookId={bookId || ''} />;
+  return <BookReader bookId={bookId || ""} />;
 };
 
 function App() {

@@ -5,11 +5,11 @@ const request = axios.create({
   baseURL: "http://localhost:3002",
 });
 
-class Request {
+class ExtAPI {
   static async parseContent(content: string): Promise<ContentAnalysis> {
     const response = await request.post("/api/parse-content", { content });
     return response.data;
   }
 }
 
-export default Request;
+export default ExtAPI;

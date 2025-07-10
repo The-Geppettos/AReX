@@ -1,7 +1,6 @@
 import { db } from "./index";
 import { v4 as uuidv4 } from "uuid";
-import { Book, BookChunk, BookWithChunkList } from "@shared/types";
-import Request from "../request";
+import { Book, BookChunk } from "@shared/types";
 
 // Helper function to generate UUID
 const generateId = () => uuidv4();
@@ -18,32 +17,20 @@ export const bookOperations = {
     }));
   },
 
-  async getById(id: string): Promise<BookWithChunkList | null> {
+  async getById(id: string): Promise<Book | null> {
     const book = await db.get<Book>("SELECT * FROM books WHERE id = ?", [id]);
     if (!book) return null;
 
-    const bookChunks = await db.all<BookChunk>(
-      "SELECT * FROM book_chunks WHERE book_id = ? ORDER BY word_count_cumulative",
-      [id]
-    );
-
-    const bookWithChunkList: BookWithChunkList = {
-      ...book,
-      chunk_list: bookChunks.map((chunk) => chunk.id),
-    };
-
-    return bookWithChunkList;
+    return book;
   },
 
   async createBook(title: string, author: string): Promise<Book> {
     const bookId = generateId();
     const createdAt = new Date().toISOString();
-    await db.run("INSERT INTO books (id, title, author, created_at) VALUES (?, ?, ?, ?)", [
-      bookId,
-      title,
-      author,
-      createdAt,
-    ]);
+    await db.run(
+      "INSERT INTO books (id, title, author, created_at) VALUES (?, ?, ?, ?)",
+      [bookId, title, author, createdAt],
+    );
 
     return {
       id: bookId,
@@ -55,46 +42,62 @@ export const bookOperations = {
 };
 
 export const bookChunkOperations = {
-  async getBookChunk(id: string): Promise<BookChunk | null> {
-    const bookChunk = await db.get<BookChunk>("SELECT * FROM book_chunks WHERE id = ?", [id]);
+  async getBookChunkByOffset(
+    boodId: string,
+    offset: number,
+  ): Promise<BookChunk | null> {
+    const bookChunk = await db.get<BookChunk>(
+      "SELECT * FROM book_chunks WHERE book_id = ? AND offset_start <= ? AND offset_end >= ?",
+      [boodId, offset, offset],
+    );
     if (!bookChunk) return null;
 
     return bookChunk;
   },
 
-  async createBookChunk(bookId: string, content: string): Promise<BookChunk> {
+  async createBookChunk(bookId: string, chunk: string): Promise<BookChunk> {
     const bookChunkId = generateId();
     const createdAt = new Date().toISOString();
 
-    const wordCount = content.split(" ").length;
+    const chunkLength = chunk.length;
 
-    let wordCountCumulative = 0;
-    const lastChunk = await db.get<{ word_count_cumulative: number }>("SELECT word_count_cumulative FROM book_chunks WHERE book_id = ? ORDER BY word_count_cumulative DESC LIMIT 1", [bookId]);
-    if (!lastChunk) {
-      wordCountCumulative = 0;
-    } else {
-      wordCountCumulative = lastChunk.word_count_cumulative;
-    } 
+    if (chunkLength === 0) {
+      throw new Error("Chunk cannot be empty");
+    }
 
-    const aiResponse = await Request.parseContent(content);
-    console.log(aiResponse);
+    const lastChunk = await db.get<BookChunk>(
+      "SELECT offset_end FROM book_chunks WHERE book_id = ? ORDER BY offset_end DESC LIMIT 1",
+      [bookId],
+    );
 
-    await db.run("INSERT INTO book_chunks (id, book_id, content, word_count, word_count_cumulative, created_at) VALUES (?, ?, ?, ?, ?, ?)", [
-      bookChunkId,
-      bookId,
-      content,
-      wordCount,
-      wordCountCumulative + wordCount,
-      createdAt,
-    ]);
+    let offsetStart = 0;
+    if (lastChunk) {
+      offsetStart = lastChunk.offset_end + 1;
+    }
+
+    const offsetEnd = offsetStart + chunkLength - 1;
+
+    await db.run(
+      "INSERT INTO book_chunks (id, book_id, chunk, chunk_length, offset_start, offset_end, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [
+        bookChunkId,
+        bookId,
+        chunk,
+        chunkLength,
+        offsetStart,
+        offsetEnd,
+        createdAt,
+      ],
+    );
 
     return {
       id: bookChunkId,
       book_id: bookId,
-      content,
-      word_count: wordCount,
-      word_count_cumulative: wordCountCumulative + wordCount,
+      chunk,
+      chunk_length: chunkLength,
+      offset_start: offsetStart,
+      offset_end: offsetEnd,
       created_at: createdAt,
     };
   },
-}
+};

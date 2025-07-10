@@ -8,9 +8,10 @@ CREATE TABLE IF NOT EXISTS books (
 CREATE TABLE IF NOT EXISTS book_chunks (
     id TEXT PRIMARY KEY,
     book_id TEXT NOT NULL,
-    content TEXT NOT NULL,
-    word_count INTEGER NOT NULL,
-    word_count_cumulative INTEGER NOT NULL,
+    chunk TEXT NOT NULL,
+    chunk_length INTEGER NOT NULL,
+    offset_start INTEGER NOT NULL,
+    offset_end INTEGER NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
 );

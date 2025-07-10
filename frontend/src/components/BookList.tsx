@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Book } from '@shared/types';
-import axios from 'axios';
-import './BookList.css';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Book } from "@shared/types";
+import "./BookList.css";
+import { Link } from "react-router-dom";
+import ExtAPI from "../api/extApi";
 
 const BookList: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -12,14 +12,14 @@ const BookList: React.FC = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        console.log('Fetching books...');
-        const response = await axios.get<Book[]>('http://localhost:3001/api/books');
-        console.log('Received books:', response.data);
-        setBooks(response.data);
+        console.log("Fetching books...");
+        const bookList = await ExtAPI.getBookList();
+        console.log("Received books:", bookList);
+        setBooks(bookList);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching books:', err);
-        setError('Failed to fetch books');
+        console.error("Error fetching books:", err);
+        setError("Failed to fetch books");
         setLoading(false);
       }
     };
@@ -30,7 +30,7 @@ const BookList: React.FC = () => {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
-  console.log('Rendering books:', books);
+  console.log("Rendering books:", books);
 
   return (
     <div className="book-list">
@@ -53,4 +53,4 @@ const BookList: React.FC = () => {
   );
 };
 
-export default BookList; 
+export default BookList;
