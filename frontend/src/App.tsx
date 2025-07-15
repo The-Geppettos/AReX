@@ -1,10 +1,10 @@
-import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import BookReader from "./components/BookReader";
 import BookList from "./components/BookList";
 import { useParams } from "react-router-dom";
+import Admin from "./components/admin";
 
 const theme = createTheme({
   palette: {
@@ -32,6 +32,7 @@ function App() {
         <Routes>
           <Route path="/book/:bookId" element={<BookReaderWrapper />} />
           <Route path="/" element={<BookList />} />
+          {Admin}
         </Routes>
       </Router>
     </ThemeProvider>

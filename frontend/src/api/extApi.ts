@@ -16,27 +16,20 @@ class ExtAPI {
     return response.data;
   }
 
-  private static bookChunkCache: Map<
-    string,
-    { chunks: BookChunk[]; maxOffset: number | null }
-  > = new Map();
+  private static bookChunkCache: Map<string, BookChunk[]> = new Map();
 
   static async getBookChunk(
     bookId: string,
     offset: number,
-  ): Promise<BookChunk | "REACHED_MAX"> {
+  ): Promise<BookChunk> {
     if (offset < 0) {
       throw new Error("Offset must be a non-negative integer.");
     }
     // Check if the chunk is already cached
     let cached = this.bookChunkCache.get(bookId);
     if (cached) {
-      if (cached.maxOffset !== null && offset > cached.maxOffset) {
-        return "REACHED_MAX";
-      }
-
       // TODO: Binary search
-      const chunk = cached.chunks.find(
+      const chunk = cached.find(
         (c) => c.offset_start <= offset && c.offset_end >= offset,
       );
 
@@ -44,26 +37,16 @@ class ExtAPI {
         return chunk;
       }
     } else {
-      cached = { maxOffset: null, chunks: [] };
+      cached = [];
       this.bookChunkCache.set(bookId, cached);
     }
 
-    try {
-      const response = await request.get(
-        `/api/books/${bookId}/chunk/${offset}`,
-      );
+    const response = await request.get(`/api/books/${bookId}/chunk/${offset}`);
 
-      // TODO: Sort chunks by offset_start
-      cached.chunks.push(response.data);
+    // TODO: Sort chunks by offset_start
+    cached.push(response.data);
 
-      return response.data;
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 404) {
-        cached.maxOffset = offset - 1;
-        return "REACHED_MAX";
-      }
-      throw error;
-    }
+    return response.data;
   }
 }
 
