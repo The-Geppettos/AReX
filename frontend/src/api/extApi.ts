@@ -1,4 +1,4 @@
-import { Book, BookChunk, BookDetail } from "@shared/types";
+import type { Book, BookChunk, BookDetail } from "@shared/types";
 import axios from "axios";
 
 const request = axios.create({

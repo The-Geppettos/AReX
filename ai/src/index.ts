@@ -39,7 +39,9 @@ app.post("/api/parse-content", async (req, res) => {
     ],
   });
 
-  const response = await agent.conversate(ContentParserService.template.replace("{{content}}", content));
+  const response = await agent.conversate(
+    ContentParserService.template.replace("{{content}}", content),
+  );
   console.log(response);
 
   res.json(analysis);

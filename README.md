@@ -24,7 +24,7 @@ An intelligent eBook reading application that uses AI to enhance the reading exp
 
 ### Prerequisites
 
-- Node.js (v20 or higher)
+- Node.js (lts/jod)
 - npm
 - OpenAI API key
 

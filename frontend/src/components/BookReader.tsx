@@ -7,8 +7,8 @@ import React, {
 } from "react";
 import { Box, Paper, Typography, CircularProgress } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Theme } from "@mui/material/styles";
-import { BookDetail } from "@shared/types";
+import type { Theme } from "@mui/material/styles";
+import type { BookDetail } from "@shared/types";
 import ExtAPI from "../api/extApi";
 
 const ReaderContainer = styled(Paper)(({ theme }: { theme: Theme }) => ({
@@ -30,10 +30,10 @@ const BookContent = styled(Box)(({ theme }: { theme: Theme }) => ({
   },
 }));
 
-const Header = styled(Box)(({ theme }: { theme: Theme }) => ({
+const Header = styled(Box)(({}: { theme: Theme }) => ({
   width: "100%",
 }));
-const Footer = styled(Box)(({ theme }: { theme: Theme }) => ({
+const Footer = styled(Box)(({}: { theme: Theme }) => ({
   width: "100%",
 }));
 
