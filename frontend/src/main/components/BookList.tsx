@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { Book } from "@shared/types";
 import "./BookList.css";
-import { Link } from "react-router-dom";
-import ExtAPI from "../api/extApi";
+import ExtAPI from "../../api/extApi";
 
 const BookList: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -40,7 +39,7 @@ const BookList: React.FC = () => {
               <h3>{book.title}</h3>
               <p>By {book.author}</p>
               <p>Added on {new Date(book.created_at).toLocaleDateString()}</p>
-              <Link to={`/book/${book.id}`}>Read</Link>
+              <a href={`/bookreader/${book.id}`}>Read</a>
             </div>
           ))}
         </div>
