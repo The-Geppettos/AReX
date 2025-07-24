@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS books (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     author TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('draft', 'published', 'archived')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

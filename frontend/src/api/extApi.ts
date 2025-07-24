@@ -1,4 +1,12 @@
-import type { Book, BookDetail, BookPageDetail } from "@shared/types";
+import type {
+  Book,
+  BookChapter,
+  BookChapterCreate,
+  BookCreate,
+  BookDetail,
+  BookPageCreate,
+  BookPageDetail,
+} from "@shared/types";
 import axios from "axios";
 
 const request = axios.create({
@@ -42,6 +50,33 @@ class ExtAPI {
     cached.set(page_number, response.data);
 
     return response.data;
+  }
+
+  static async createBook(bookInfo: BookCreate): Promise<Book> {
+    const response = await request.post("/api/book", bookInfo);
+    return response.data;
+  }
+
+  static async createBookChapter(
+    chapterInfo: BookChapterCreate,
+  ): Promise<BookChapter> {
+    const response = await request.post(
+      `/api/book/${chapterInfo.book_id}/chapter`,
+      chapterInfo,
+    );
+    return response.data;
+  }
+
+  static async createBookPage(
+    bookPageInfo: BookPageCreate,
+  ): Promise<BookPageDetail> {
+    const response = await request.post(
+      `/api/book/${bookPageInfo.book_id}/page`,
+      bookPageInfo,
+    );
+    const bookPage = response.data;
+
+    return bookPage;
   }
 }
 

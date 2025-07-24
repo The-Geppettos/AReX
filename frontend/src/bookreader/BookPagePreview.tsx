@@ -16,7 +16,7 @@ const BookPagePreview = () => {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === "book-page-preview") {
+      if (event.data.type === "book-page-preview-start") {
         setPreviewMessage({
           content:
             typeof event.data.content === "string" ? event.data.content : null,
@@ -30,8 +30,22 @@ const BookPagePreview = () => {
     };
 
     window.addEventListener("message", handleMessage);
+    parent.postMessage(
+      {
+        type: "book-page-preview-load",
+      },
+      "*",
+    );
 
-    return () => window.removeEventListener("message", handleMessage);
+    return () => {
+      parent.postMessage(
+        {
+          type: "book-page-preview-unload",
+        },
+        "*",
+      );
+      window.removeEventListener("message", handleMessage);
+    };
   }, []);
 
   useEffect(() => {
@@ -85,8 +99,8 @@ const BookPagePreview = () => {
     }
 
     previewMessage.source.postMessage({
-      type: "bookPreviewVisibleContentLength",
-      visibleContentLegnth,
+      type: "book-page-preview-completed",
+      visible_content_length: visibleContentLegnth,
     });
     return;
   }, [previewMessage]);

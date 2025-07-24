@@ -33,6 +33,27 @@ const BookReader = ({ bookId }: BookReaderProps) => {
     }
   }, [bookInfo, showSinglePage]);
 
+  const currentPageStr = useMemo(() => {
+    if (!bookInfo || pageNumber === null) return "N/A";
+    if (showSinglePage) {
+      return `${pageNumber}`;
+    } else {
+      let leftPage;
+      let rightPage;
+      if (isLeftPage) {
+        leftPage = pageNumber;
+        rightPage = pageNumber + 1;
+      } else {
+        leftPage = pageNumber - 1;
+        rightPage = pageNumber;
+      }
+      if (bookInfo.total_pages < rightPage) {
+        return `${leftPage}`;
+      }
+      return `${leftPage}, ${rightPage}`;
+    }
+  }, [bookInfo, pageNumber, showSinglePage, isLeftPage]);
+
   useEffect(() => {
     const fetchBookData = async () => {
       try {
@@ -188,7 +209,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
           Previous
         </button>
         <span>
-          Page {pageNumber} of {bookInfo?.total_pages || 0}
+          Page {currentPageStr} of {bookInfo?.total_pages || 0}
         </span>
         <button
           onClick={() => {

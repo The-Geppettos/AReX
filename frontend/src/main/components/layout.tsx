@@ -21,7 +21,7 @@ type LayoutProps = {
     title: string;
     icon?: React.ReactNode;
     url: string;
-    component: React.ComponentType<any>;
+    component: React.ComponentType;
   }>;
 };
 

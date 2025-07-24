@@ -5,7 +5,6 @@ import {
   BookChapter,
   BookPage,
   BookDetail,
-  BookChapterDetail,
   BookPageDetail,
 } from "@shared/types";
 
@@ -15,13 +14,10 @@ const generateId = () => uuidv4();
 // Book operations
 export const bookOperations = {
   async getAll(): Promise<Book[]> {
-    const books = await db.all<Book>("SELECT * FROM books");
-    return books.map((book) => ({
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      created_at: book.created_at,
-    }));
+    const books = await db.all<Book>(
+      "SELECT * FROM books where status = 'published'",
+    );
+    return books;
   },
 
   async getById(id: string): Promise<BookDetail | null> {
@@ -44,44 +40,21 @@ export const bookOperations = {
     const bookId = generateId();
     const createdAt = new Date().toISOString();
     await db.run(
-      "INSERT INTO books (id, title, author, created_at) VALUES (?, ?, ?, ?)",
-      [bookId, title, author, createdAt],
+      "INSERT INTO books (id, title, author, status, created_at) VALUES (?, ?, ?, ?, ?)",
+      [bookId, title, author, "draft", createdAt],
     );
 
     return {
       id: bookId,
       title: title,
       author: author,
+      status: "draft",
       created_at: createdAt,
     };
   },
 };
 
 export const bookChapterOperations = {
-  async getChapter(
-    bookId: string,
-    chapterNumber: number,
-  ): Promise<BookChapterDetail | null> {
-    const chapter = await db.get<BookChapter>(
-      "SELECT * FROM book_chapters WHERE book_id = ? AND chapter_number = ?",
-      [bookId, chapterNumber],
-    );
-
-    if (!chapter) return null;
-
-    const startPage = await db.get<{ start_page: number }>(
-      "SELECT MIN(page_number) AS start_page FROM book_pages WHERE book_id = ? AND chapter_id = ?",
-      [bookId, chapter.id],
-    );
-
-    if (!startPage) return null;
-
-    return {
-      ...chapter,
-      start_page: startPage.start_page,
-    };
-  },
-
   async createChapter(
     bookId: string,
     chapterNumber: number,

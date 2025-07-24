@@ -1,9 +1,12 @@
-import { Fragment, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
   Card,
   Container,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Divider,
   FormControl,
   FormHelperText,
@@ -22,6 +25,19 @@ import {
   Delete,
   CloudUpload as UploadIcon,
 } from "@mui/icons-material";
+import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "../../../bookreader/const";
+import ExtAPI from "../../../api/extApi";
+
+type BookPagenateResponse = {
+  visibleContentLength: number;
+};
+
+type BookPagenateRequest = {
+  chapterTitle: string | null;
+  content: string;
+  resolve: (value: BookPagenateResponse) => void;
+  reject: (reason?: unknown) => void;
+};
 
 const BOOK_FILE_EXT = ["txt"] as const;
 type BookFileExt = (typeof BOOK_FILE_EXT)[number];
@@ -44,8 +60,6 @@ const RegisterBook = () => {
     value: "",
     error: null,
   });
-  const chapterIndexRef = useRef(0);
-
   const [chapters, setChapters] = useState<{
     value: {
       title: InputTextState;
@@ -55,6 +69,11 @@ const RegisterBook = () => {
     }[];
     error: string | null;
   }>({ value: [], error: null });
+  const [bookPaginateRequest, setBookPaginateRequest] =
+    useState<BookPagenateRequest | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const chapterIndexRef = useRef(0);
 
   const validate = () => {
     let valid = true;
@@ -86,8 +105,92 @@ const RegisterBook = () => {
     return valid;
   };
 
+  const getContentText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const bookPaginate = (chapterTitle: string | null, content: string) => {
+    return new Promise<BookPagenateResponse>((resolve, reject) => {
+      setBookPaginateRequest({
+        chapterTitle,
+        content,
+        resolve,
+        reject,
+      });
+    });
+  };
+
+  const endBookPaginate = () => {
+    setBookPaginateRequest(null);
+  };
+
   const submit = async () => {
     if (!validate()) return;
+
+    try {
+      setIsUploading(true);
+      const createdBook = await ExtAPI.createBook({
+        title: bookTitle.value.trim(),
+        author: author.value.trim(),
+      });
+
+      let pageNumber = 1;
+
+      for (const { chapter, idx } of chapters.value.map((chapter, idx) => ({
+        chapter,
+        idx,
+      }))) {
+        const chapterTitle = chapter.title.value.trim();
+
+        const createdChapter = await ExtAPI.createBookChapter({
+          book_id: createdBook.id,
+          title: chapterTitle,
+          chapter_number: idx + 1,
+        });
+
+        const content = await getContentText(chapter.file);
+
+        let offset = 0;
+        let firstPage = true;
+
+        while (offset < content.length) {
+          let pageContent = content.slice(offset);
+
+          const response = await bookPaginate(
+            firstPage ? chapterTitle : null,
+            pageContent,
+          );
+
+          pageContent = pageContent
+            .slice(0, response.visibleContentLength)
+            .trim();
+
+          if (pageContent.length > 0) {
+            await ExtAPI.createBookPage({
+              book_id: createdBook.id,
+              chapter_id: createdChapter.id,
+              content: pageContent,
+              page_number: pageNumber++,
+            });
+          }
+
+          firstPage = false;
+          offset += response.visibleContentLength;
+        }
+      }
+    } catch (error) {
+      console.error("Error generating page:", error);
+      alert("Failed to generate page for chapter.");
+    } finally {
+      endBookPaginate();
+      setIsUploading(false);
+      alert("Book registered successfully!");
+    }
   };
 
   const selectFile = (file: File) => {
@@ -143,6 +246,7 @@ const RegisterBook = () => {
           helperText={bookTitle.error || "Enter the title of the book"}
           value={bookTitle.value}
           onChange={(e) => setBookTitle({ value: e.target.value, error: null })}
+          disabled={isUploading}
         />
         <TextField
           name="author"
@@ -154,6 +258,7 @@ const RegisterBook = () => {
           margin="normal"
           value={author.value}
           onChange={(e) => setAuthor({ value: e.target.value, error: null })}
+          disabled={isUploading}
         />
 
         <FormControl
@@ -177,6 +282,7 @@ const RegisterBook = () => {
               component="label"
               sx={{ ml: 2 }}
               startIcon={<UploadIcon />}
+              disabled={isUploading}
             >
               Upload ({BOOK_FILE_EXT.map((ext) => `.${ext}`).join(", ")})
               <input
@@ -222,6 +328,7 @@ const RegisterBook = () => {
                             chapter.title.error || "Enter the chapter title"
                           }
                           margin="normal"
+                          disabled={isUploading}
                           onChange={(e) =>
                             setChapters((prev) => ({
                               value: prev.value.map((c, i) =>
@@ -245,7 +352,7 @@ const RegisterBook = () => {
                     />
 
                     <IconButton
-                      disabled={index === 0}
+                      disabled={isUploading || index === 0}
                       size="small"
                       onClick={() => {
                         setChapters((prev) => {
@@ -263,7 +370,9 @@ const RegisterBook = () => {
                       <ArrowUpward />
                     </IconButton>
                     <IconButton
-                      disabled={index === chapters.value.length - 1}
+                      disabled={
+                        isUploading || index === chapters.value.length - 1
+                      }
                       size="small"
                       onClick={() => {
                         setChapters((prev) => {
@@ -283,6 +392,7 @@ const RegisterBook = () => {
                     <IconButton
                       size="small"
                       color="error"
+                      disabled={isUploading}
                       onClick={() =>
                         setChapters((prev) => ({
                           value: prev.value.filter((_, i) => i !== index),
@@ -309,15 +419,100 @@ const RegisterBook = () => {
         >
           <Button
             variant="contained"
-            onClick={submit}
+            onClick={() => {
+              const confirm = window.confirm(
+                "Are you sure you want to register this book?",
+              );
+              if (confirm) {
+                submit();
+              }
+            }}
             size="large"
+            disabled={isUploading}
             sx={{ mt: 3 }}
           >
             Register Book
           </Button>
         </Box>
       </Paper>
+      <Dialog open={!!bookPaginateRequest}>
+        <BookPaginatorDialog bookPagenateRequest={bookPaginateRequest} />
+      </Dialog>
     </Container>
+  );
+};
+
+const BookPaginatorDialog = ({
+  bookPagenateRequest,
+}: {
+  bookPagenateRequest: BookPagenateRequest | null;
+}) => {
+  const previewRef = useRef<HTMLIFrameElement>({} as HTMLIFrameElement);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source === previewRef.current?.contentWindow) {
+        if (event.data.type === "book-page-preview-load") {
+          setIsReady(true);
+        }
+        if (event.data.type === "book-page-preview-unload") {
+          setIsReady(false);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isReady && bookPagenateRequest) {
+      const handleResponse = (event: MessageEvent) => {
+        if (event.source === previewRef.current?.contentWindow) {
+          if (event.data.type === "book-page-preview-completed") {
+            const visibleContentLength = event.data.visible_content_length;
+            if (typeof visibleContentLength !== "number") {
+              bookPagenateRequest.reject(
+                "Invalid response from preview: visible_content_length is not a number.",
+              );
+              return;
+            }
+            bookPagenateRequest.resolve({ visibleContentLength });
+
+            window.removeEventListener("message", handleResponse);
+          }
+        }
+      };
+
+      window.addEventListener("message", handleResponse);
+
+      previewRef.current.contentWindow?.postMessage(
+        {
+          type: "book-page-preview-start",
+          chapter_title: bookPagenateRequest.chapterTitle,
+          content: bookPagenateRequest.content,
+        },
+        "*",
+      );
+    }
+  }, [isReady, bookPagenateRequest]);
+
+  return (
+    <>
+      <DialogTitle>Book Page Preview</DialogTitle>
+      <DialogContent>
+        <iframe
+          width={BOOK_PAGE_WIDTH}
+          height={BOOK_PAGE_HEIGHT}
+          ref={previewRef}
+          src="/bookreader/page-preview"
+        />
+      </DialogContent>
+    </>
   );
 };
 
