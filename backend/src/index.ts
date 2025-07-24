@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { bookOperations } from "./db/operations";
-import { bookChunkOperations } from "./db/operations";
+import { bookPageOperations } from "./db/operations";
 import { initializeDatabase } from "./db";
 
 dotenv.config();
@@ -33,7 +33,7 @@ const main = async () => {
     }
   });
 
-  app.get("/api/books/:id", async (req, res) => {
+  app.get("/api/book/:id", async (req, res) => {
     try {
       const book = await bookOperations.getById(req.params.id);
       if (!book) {
@@ -45,19 +45,19 @@ const main = async () => {
     }
   });
 
-  app.get("/api/books/:id/chunk/:offset", async (req, res) => {
-    const { id, offset } = req.params;
+  app.get("/api/book/:id/page/:page", async (req, res) => {
+    const { id, page } = req.params;
     try {
-      const bookChunk = await bookChunkOperations.getBookChunkByOffset(
+      const bookPage = await bookPageOperations.getBookPage(
         id,
-        parseInt(offset),
+        parseInt(page),
       );
-      if (!bookChunk) {
-        return res.status(404).json({ error: "Book chunk not found" });
+      if (!bookPage) {
+        return res.status(404).json({ error: "Book page not found" });
       }
-      res.json(bookChunk);
+      res.json(bookPage);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch book chunk" });
+      res.status(500).json({ error: "Failed to fetch book page" });
     }
   });
 

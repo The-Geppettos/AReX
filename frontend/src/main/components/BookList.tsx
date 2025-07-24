@@ -39,7 +39,7 @@ const BookList: React.FC = () => {
               <h3>{book.title}</h3>
               <p>By {book.author}</p>
               <p>Added on {new Date(book.created_at).toLocaleDateString()}</p>
-              <a href={`/bookreader/${book.id}`}>Read</a>
+              <a href={`/bookreader/read/${book.id}`}>Read</a>
             </div>
           ))}
         </div>

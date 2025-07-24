@@ -4,7 +4,8 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { Book as BookIcon } from "@mui/icons-material";
 import BookList from "./components/BookList";
 import Layout from "./components/layout";
-import BookManage from "./components/admin/BookManage";
+import RegisterBook from "./components/admin/RegisterBook";
+
 import { theme } from "../theme";
 
 const pages = [
@@ -15,10 +16,10 @@ const pages = [
     component: BookList,
   },
   {
-    title: "Manage Books",
+    title: "Register Book",
     icon: <BookIcon />,
-    url: "/admin/manage-books",
-    component: BookManage,
+    url: "/admin/register-book",
+    component: RegisterBook,
   },
 ];
 

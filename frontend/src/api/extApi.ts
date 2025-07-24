@@ -1,4 +1,4 @@
-import type { Book, BookChunk, BookDetail } from "@shared/types";
+import type { Book, BookDetail, BookPageDetail } from "@shared/types";
 import axios from "axios";
 
 const request = axios.create({
@@ -12,39 +12,34 @@ class ExtAPI {
   }
 
   static async getBookInfo(id: string): Promise<BookDetail> {
-    const response = await request.get(`/api/books/${id}`);
+    const response = await request.get(`/api/book/${id}`);
     return response.data;
   }
 
-  private static bookChunkCache: Map<string, BookChunk[]> = new Map();
+  private static bookPageCache: Map<string, Map<number, BookPageDetail>> =
+    new Map();
 
-  static async getBookChunk(
+  static async getBookPage(
     bookId: string,
-    offset: number,
-  ): Promise<BookChunk> {
-    if (offset < 0) {
-      throw new Error("Offset must be a non-negative integer.");
-    }
-    // Check if the chunk is already cached
-    let cached = this.bookChunkCache.get(bookId);
+    page_number: number,
+  ): Promise<BookPageDetail> {
+    let cached = this.bookPageCache.get(bookId);
     if (cached) {
-      // TODO: Binary search
-      const chunk = cached.find(
-        (c) => c.offset_start <= offset && c.offset_end >= offset,
-      );
+      const bookPage = cached.get(page_number);
 
-      if (chunk) {
-        return chunk;
+      if (bookPage) {
+        return bookPage;
       }
     } else {
-      cached = [];
-      this.bookChunkCache.set(bookId, cached);
+      cached = new Map<number, BookPageDetail>();
+      this.bookPageCache.set(bookId, cached);
     }
 
-    const response = await request.get(`/api/books/${bookId}/chunk/${offset}`);
+    const response = await request.get(
+      `/api/book/${bookId}/page/${page_number}`,
+    );
 
-    // TODO: Sort chunks by offset_start
-    cached.push(response.data);
+    cached.set(page_number, response.data);
 
     return response.data;
   }
