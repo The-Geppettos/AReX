@@ -59,16 +59,18 @@ const ManageBooks = () => {
         <TableContainer>
           <Table>
             <TableHead>
-              <TableCell align="center">Title</TableCell>
-              <TableCell align="center">Author</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="center">Created At</TableCell>
-              <TableCell align="center">Last Updated</TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableRow>
+                <TableCell align="center">Title</TableCell>
+                <TableCell align="center">Author</TableCell>
+                <TableCell align="center">Status</TableCell>
+                <TableCell align="center">Created At</TableCell>
+                <TableCell align="center">Last Updated</TableCell>
+                <TableCell align="center">Actions</TableCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {bookList.books.map((book) => (
-                <TableRow>
+                <TableRow key={book.id}>
                   <TableCell align="center">{book.title}</TableCell>
                   <TableCell align="center">{book.author}</TableCell>
                   <TableCell align="center">{book.status}</TableCell>
