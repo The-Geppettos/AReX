@@ -5,6 +5,7 @@ import { BOOK_PAGE_WIDTH } from "./const";
 type PreviewMessage = {
   content: string | null;
   chapterTitle: string | null;
+  width: number;
   source: MessageEventSource | null;
 };
 
@@ -24,6 +25,10 @@ const BookPagePreview = () => {
             typeof event.data.chapter_title === "string"
               ? event.data.chapter_title
               : null,
+          width:
+            typeof event.data.width === "number"
+              ? event.data.width
+              : BOOK_PAGE_WIDTH,
           source: event.source,
         });
       }
@@ -107,7 +112,7 @@ const BookPagePreview = () => {
 
   return (
     <BookPageView
-      width={BOOK_PAGE_WIDTH}
+      width={previewMessage?.width || BOOK_PAGE_WIDTH}
       content={previewMessage?.content || null}
       chapterTitle={previewMessage?.chapterTitle || null}
       ref={ref}

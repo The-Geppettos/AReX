@@ -57,7 +57,7 @@ const Layout = ({ pages }: LayoutProps) => {
       >
         <Box sx={{ width: 250 }}>
           <Box sx={{ display: "flex", alignItems: "center", padding: 2 }}>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               AReX Dashboard
             </Typography>
             <IconButton onClick={() => setDrawerOpen(false)}>
@@ -96,7 +96,7 @@ const Layout = ({ pages }: LayoutProps) => {
           <Route
             path="*"
             element={
-              <Typography variant="h6" color="textSecondary">
+              <Typography variant="h6" component="h1" color="textSecondary">
                 Page Not Found
               </Typography>
             }

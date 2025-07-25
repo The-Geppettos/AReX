@@ -50,7 +50,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
       if (bookInfo.total_pages < rightPage) {
         return `${leftPage}`;
       }
-      return `${leftPage}, ${rightPage}`;
+      return `${leftPage} - ${rightPage}`;
     }
   }, [bookInfo, pageNumber, showSinglePage, isLeftPage]);
 
@@ -62,6 +62,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
         setPageNumber(1);
       } catch (error) {
         console.error("Error fetching book data:", error);
+        alert("Failed to load book data. Please try again later.");
       }
     };
 
@@ -97,6 +98,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
           }
         } catch (error) {
           console.error("Error fetching page content:", error);
+          alert("Failed to load page content. Please try again later.");
         }
       };
 

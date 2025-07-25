@@ -6,6 +6,7 @@ import {
   BookPage,
   BookDetail,
   BookPageDetail,
+  BookList,
 } from "@shared/types";
 
 // Helper function to generate UUID
@@ -13,11 +14,80 @@ const generateId = () => uuidv4();
 
 // Book operations
 export const bookOperations = {
-  async getAll(): Promise<Book[]> {
-    const books = await db.all<Book>(
-      "SELECT * FROM books where status = 'published'",
+  async getPublishedBooks(offset: number, limit: number): Promise<BookList> {
+    const total = await db.get<{ total: number }>(
+      "SELECT COUNT(*) AS total FROM books WHERE status = 'published'",
     );
-    return books;
+    if (!total) {
+      throw new Error("Failed to fetch total count of published books");
+    }
+    const books = await db.all<Book>(
+      "SELECT * FROM books WHERE status = 'published' ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+      [limit, offset],
+    );
+    return {
+      books,
+      offset,
+      limit,
+      total: total.total,
+    };
+  },
+
+  async getAllBooks(offset: number, limit: number): Promise<BookList> {
+    const total = await db.get<{ total: number }>(
+      "SELECT COUNT(*) AS total FROM books",
+    );
+    if (!total) {
+      throw new Error("Failed to fetch total count of books");
+    }
+    const books = await db.all<Book>(
+      "SELECT * FROM books ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+      [limit, offset],
+    );
+    return {
+      books,
+      offset,
+      limit,
+      total: total.total,
+    };
+  },
+
+  async publishBook(id: string): Promise<Book> {
+    const updatedAt = new Date().toISOString();
+    await db.run(
+      "UPDATE books SET status = 'published', updated_at = ? WHERE id = ?",
+      [updatedAt, id],
+    );
+
+    const book = await db.get<Book>("SELECT * FROM books WHERE id = ?", [id]);
+
+    if (!book) {
+      throw new Error("Book not found");
+    }
+    if (book.status !== "published") {
+      throw new Error("Publish failed");
+    }
+
+    return book;
+  },
+
+  async unPublishBook(id: string): Promise<Book> {
+    const updatedAt = new Date().toISOString();
+    await db.run(
+      "UPDATE books SET status = 'draft', updated_at = ? WHERE id = ?",
+      [updatedAt, id],
+    );
+
+    const book = await db.get<Book>("SELECT * FROM books WHERE id = ?", [id]);
+
+    if (!book) {
+      throw new Error("Book not found");
+    }
+    if (book.status !== "draft") {
+      throw new Error("Unpublish failed");
+    }
+
+    return book;
   },
 
   async getById(id: string): Promise<BookDetail | null> {
@@ -39,9 +109,10 @@ export const bookOperations = {
   async createBook(title: string, author: string): Promise<Book> {
     const bookId = generateId();
     const createdAt = new Date().toISOString();
+    const updatedAt = createdAt;
     await db.run(
-      "INSERT INTO books (id, title, author, status, created_at) VALUES (?, ?, ?, ?, ?)",
-      [bookId, title, author, "draft", createdAt],
+      "INSERT INTO books (id, title, author, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [bookId, title, author, "draft", createdAt, updatedAt],
     );
 
     return {
@@ -50,6 +121,7 @@ export const bookOperations = {
       author: author,
       status: "draft",
       created_at: createdAt,
+      updated_at: updatedAt,
     };
   },
 };

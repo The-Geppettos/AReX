@@ -25,12 +25,27 @@ const main = async () => {
   });
 
   // Book endpoints
-  app.get("/api/books", async (_req, res) => {
+  app.get("/api/books/published/:offset/:limit", async (req, res) => {
+    const offset = parseInt(req.params.offset, 10);
+    const limit = parseInt(req.params.limit, 10);
+
     try {
-      const books = await bookOperations.getAll();
+      const books = await bookOperations.getPublishedBooks(offset, limit);
       res.json(books);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch books" });
+    }
+  });
+
+  app.get("/api/books/all/:offset/:limit", async (req, res) => {
+    const offset = parseInt(req.params.offset, 10);
+    const limit = parseInt(req.params.limit, 10);
+
+    try {
+      const books = await bookOperations.getAllBooks(offset, limit);
+      res.json(books);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch all books" });
     }
   });
 
@@ -62,6 +77,26 @@ const main = async () => {
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch book" });
+    }
+  });
+
+  app.put("/api/book/:id/publish", async (req, res) => {
+    const { id } = req.params;
+    try {
+      const book = await bookOperations.publishBook(id);
+      res.json(book);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to publish book" });
+    }
+  });
+
+  app.put("/api/book/:id/unpublish", async (req, res) => {
+    const { id } = req.params;
+    try {
+      const book = await bookOperations.unPublishBook(id);
+      res.json(book);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to unpublish book" });
     }
   });
 

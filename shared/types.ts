@@ -4,12 +4,20 @@ export interface Book {
   author: string;
   status: "draft" | "published";
   created_at: string;
+  updated_at: string;
 }
 
 export interface BookCreate extends Pick<Book, "title" | "author"> {}
 
 export interface BookDetail extends Book {
   total_pages: number;
+}
+
+export interface BookList {
+  books: Book[];
+  offset: number;
+  limit: number;
+  total: number;
 }
 
 export interface BookChapter {
@@ -43,4 +51,8 @@ export interface BookPageCreate
 
 export interface BookPageDetail extends BookPage {
   chapter_title: string | null;
+}
+
+export interface ContentAnalysis {
+  characters: string[];
 }

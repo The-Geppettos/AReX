@@ -1,25 +1,31 @@
 import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { Book as BookIcon } from "@mui/icons-material";
+import { AutoStories, CloudUpload, LibraryBooks } from "@mui/icons-material";
 import BookList from "./components/BookList";
 import Layout from "./components/layout";
-import RegisterBook from "./components/admin/RegisterBook";
-
-import { theme } from "../theme";
+import RegisterNewBook from "./components/admin/RegisterNewBook";
+import ManageBooks from "./components/admin/ManageBooks";
+import { theme } from "./theme";
 
 const pages = [
   {
     title: "Read Book",
-    icon: <BookIcon />,
+    icon: <AutoStories />,
     url: "/books",
     component: BookList,
   },
   {
     title: "Register Book",
-    icon: <BookIcon />,
-    url: "/admin/register-book",
-    component: RegisterBook,
+    icon: <CloudUpload />,
+    url: "/admin/register-new-book",
+    component: RegisterNewBook,
+  },
+  {
+    title: "Manage Books",
+    icon: <LibraryBooks />,
+    url: "/admin/manage-books",
+    component: ManageBooks,
   },
 ];
 
