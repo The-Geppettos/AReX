@@ -1,13 +1,20 @@
+import type VectorCollection from "./vectorCollections/abstract";
+import type { EmbeddingFunction } from "chromadb";
+
 import { OpenAIEmbeddingFunction } from "@chroma-core/openai";
-import { ChromaClient, Collection, EmbeddingFunction } from "chromadb";
+import { ChromaClient } from "chromadb";
 
 export default class ChromaDB {
-  private static client: ChromaClient;
-  private static embeddingFunction: EmbeddingFunction;
+  private client: ChromaClient | undefined;
+  private embeddingFunction: EmbeddingFunction | undefined;
 
-  static bookCollection: Collection;
+  private vectorCollections: VectorCollection[] = [];
 
-  static async initialize() {
+  addVectorCollection(vectorCollection: VectorCollection) {
+    this.vectorCollections.push(vectorCollection);
+  }
+
+  async initialize() {
     this.client = new ChromaClient({
       host: process.env.CHROMA_DB_HOST || "localhost",
       port: process.env.CHROMA_DB_PORT
@@ -21,10 +28,13 @@ export default class ChromaDB {
 
     console.log("Connecting to ChromaDB...");
 
-    this.bookCollection = await this.client.getOrCreateCollection({
-      name: "book",
-      embeddingFunction: this.embeddingFunction,
-    });
+    for (const vectorCollection of this.vectorCollections) {
+      const collection = await this.client.getOrCreateCollection({
+        name: vectorCollection.collectionName,
+        embeddingFunction: this.embeddingFunction,
+      });
+      vectorCollection.initialize(collection);
+    }
 
     console.log("ChromaDB connection established successfully.");
   }

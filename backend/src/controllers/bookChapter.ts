@@ -1,27 +1,22 @@
-import { generateId } from "../util";
-import MainDB from "../dbclient/maindb";
-import { BookChapter } from "@shared/types";
+import type { BookChapter } from "@shared/types";
+import type BookChaptersTable from "../dbclient/maindb/tables/bookChapter";
 
 export default class BookChapterController {
-  static async createChapter(
+  private bookChaptersTable: BookChaptersTable;
+
+  constructor(bookChaptersTable: BookChaptersTable) {
+    this.bookChaptersTable = bookChaptersTable;
+  }
+
+  async createChapter(
     bookId: string,
     chapterNumber: number,
     title: string,
   ): Promise<BookChapter> {
-    const chapterId = generateId();
-    const createdAt = new Date().toISOString();
-
-    await MainDB.run(
-      "INSERT INTO book_chapters (id, book_id, chapter_number, title, created_at) VALUES (?, ?, ?, ?, ?)",
-      [chapterId, bookId, chapterNumber, title, createdAt],
-    );
-
-    return {
-      id: chapterId,
+    return this.bookChaptersTable.insert({
       book_id: bookId,
       chapter_number: chapterNumber,
-      title: title,
-      created_at: createdAt,
-    };
+      title,
+    });
   }
 }

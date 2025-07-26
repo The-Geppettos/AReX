@@ -1,0 +1,27 @@
+import VectorCollection from "./abstract";
+
+export default class BookContentVectorCollection extends VectorCollection {
+  collectionName = "book_content";
+
+  async insert(data: {
+    book_id: string;
+    chapter_id: string;
+    page_number: number;
+    content: string;
+  }): Promise<void> {
+    if (!this.collection) {
+      throw new Error("Collection is not initialized.");
+    }
+    await this.collection.add({
+      ids: [data.book_id],
+      documents: [data.content],
+      metadatas: [
+        {
+          chapter_id: data.chapter_id,
+          page_number: data.page_number,
+          content: data.content,
+        },
+      ],
+    });
+  }
+}

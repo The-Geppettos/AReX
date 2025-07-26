@@ -206,37 +206,41 @@ const RegisterNewBook = () => {
   };
 
   const selectFile = (file: File) => {
-    const format = file.name.split(".").pop()?.toLowerCase() as BookFileExt;
-    if (
-      BOOK_FILE_EXT.includes(format) &&
-      BOOK_FILE_EXT_MAP[format] === file.type
-    ) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const title = file.name.split(".").slice(0, -1).join(".");
-
-        const text = e.target?.result as string;
-        const length = text.length;
-
-        setChapters((prev) => ({
-          value: [
-            ...prev.value,
-            {
-              title: { value: title, error: null },
-              file,
-              length,
-              index: chapterIndexRef.current++,
-            },
-          ],
-          error: null,
-        }));
-      };
-      reader.readAsText(file);
-    } else {
+    const ext = file.name.split(".").pop()?.toLowerCase() as BookFileExt;
+    if (!BOOK_FILE_EXT.includes(ext)) {
       alert(
-        `Unsupported file format: ${file.type}. Please upload a valid book file.`,
+        `Unsupported file format: ${ext}. Please upload a valid book file.`,
       );
+      return;
     }
+    if (BOOK_FILE_EXT_MAP[ext] !== file.type) {
+      alert(
+        `File type mismatch: expected ${BOOK_FILE_EXT_MAP[ext]}, got ${file.type}. Please upload a valid book file.`,
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const title = file.name.split(".").slice(0, -1).join(".");
+
+      const text = e.target?.result as string;
+      const length = text.length;
+
+      setChapters((prev) => ({
+        value: [
+          ...prev.value,
+          {
+            title: { value: title, error: null },
+            file,
+            length,
+            index: chapterIndexRef.current++,
+          },
+        ],
+        error: null,
+      }));
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -319,9 +323,7 @@ const RegisterNewBook = () => {
                     hidden
                     onChange={(e) => {
                       for (const file of e.target.files || []) {
-                        if (file) {
-                          selectFile(file);
-                        }
+                        selectFile(file);
                       }
                       e.target.value = "";
                     }}

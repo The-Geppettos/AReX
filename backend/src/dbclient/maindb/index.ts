@@ -1,61 +1,54 @@
+import type Table from "./tables/abstract";
+
 import Database from "better-sqlite3";
 import path from "path";
-import fs from "fs/promises";
 
 export default class MainDB {
-  private static instance: Database.Database;
+  private instance: Database.Database | undefined;
 
-  static all<T>(sql: string, params: any[] = []): Promise<T[]> {
+  private tables: Table[] = [];
+
+  addTable(table: Table) {
+    this.tables.push(table);
+  }
+
+  all<T>(sql: string, params: any[] = []): Promise<T[]> {
+    if (!this.instance) {
+      throw new Error("Database not initialized. Call initialize() first.");
+    }
     return this.instance.prepare(sql).all(params) as unknown as Promise<T[]>;
   }
-  static get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+  get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+    if (!this.instance) {
+      throw new Error("Database not initialized. Call initialize() first.");
+    }
     return this.instance.prepare(sql).get(params) as unknown as Promise<
       T | undefined
     >;
   }
-  static run(
+  run(
     sql: string,
     params: any[] = [],
   ): Promise<{ lastInsertRowid: number | bigint }> {
+    if (!this.instance) {
+      throw new Error("Database not initialized. Call initialize() first.");
+    }
     return this.instance.prepare(sql).run(params) as unknown as Promise<{
       lastInsertRowid: number | bigint;
     }>;
   }
 
-  static async initialize() {
+  async initialize() {
     this.instance = new Database(path.join(__dirname, "main.db"), {
       verbose: console.log,
     });
 
     console.log("Initializing database schema...");
-    const schema = await fs.readFile(
-      path.join(__dirname, "schema.sql"),
-      "utf-8",
-    );
 
-    // Split schema into individual statements
-    const statements = schema
-      .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    // Execute each statement separately
-    for (const statement of statements) {
-      try {
-        this.run(statement + ";");
-      } catch (err) {
-        const error = err as { code?: string; message?: string };
-        // Skip if table already exists
-        if (
-          error.code === "SQLITE_ERROR" &&
-          error.message?.includes("already exists")
-        ) {
-          console.log("Table already exists, skipping...");
-          continue;
-        }
-        throw err;
-      }
+    for (const table of this.tables) {
+      await this.run(table.createTableQuery);
     }
+
     console.log("Database schema initialized");
   }
 }

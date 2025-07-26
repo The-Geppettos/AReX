@@ -17,7 +17,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { AutoStories, Cancel, CloudUpload } from "@mui/icons-material";
+import { AutoStories, CloudDownload, CloudUpload } from "@mui/icons-material";
 
 const ROWS_PAGE_OPTIONS = [5, 10, 25];
 
@@ -128,7 +128,7 @@ const ManageBooks = () => {
                           }
                         }}
                       >
-                        <Cancel />
+                        <CloudDownload />
                       </IconButton>
                     )}
                   </TableCell>
