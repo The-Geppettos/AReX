@@ -2,37 +2,31 @@ import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs/promises";
 
-// Create database instance
-const dbInstance = new Database(
-  path.join(__dirname, "main.db"),
-  {
-    verbose: console.log,
-  },
-);
+export default class MainDB {
+  private static instance: Database.Database;
 
-// Add type definitions for database methods
-export const maindb = {
-  all: <T>(sql: string, params: any[] = []): Promise<T[]> => {
-    return dbInstance.prepare(sql).all(params) as unknown as Promise<T[]>;
-  },
-  get: <T>(sql: string, params: any[] = []): Promise<T | undefined> => {
-    return dbInstance.prepare(sql).get(params) as unknown as Promise<
+  static all<T>(sql: string, params: any[] = []): Promise<T[]> {
+    return this.instance.prepare(sql).all(params) as unknown as Promise<T[]>;
+  }
+  static get<T>(sql: string, params: any[] = []): Promise<T | undefined> {
+    return this.instance.prepare(sql).get(params) as unknown as Promise<
       T | undefined
     >;
-  },
-  run: (
+  }
+  static run(
     sql: string,
     params: any[] = [],
-  ): Promise<{ lastInsertRowid: number | bigint }> => {
-    return dbInstance.prepare(sql).run(params) as unknown as Promise<{
+  ): Promise<{ lastInsertRowid: number | bigint }> {
+    return this.instance.prepare(sql).run(params) as unknown as Promise<{
       lastInsertRowid: number | bigint;
     }>;
-  },
-};
+  }
 
-// Initialize database if needed
-export const initializeDatabase = async () => {
-  try {
+  static async initialize() {
+    this.instance = new Database(path.join(__dirname, "main.db"), {
+      verbose: console.log,
+    });
+
     console.log("Initializing database schema...");
     const schema = await fs.readFile(
       path.join(__dirname, "schema.sql"),
@@ -48,7 +42,7 @@ export const initializeDatabase = async () => {
     // Execute each statement separately
     for (const statement of statements) {
       try {
-        maindb.run(statement + ";");
+        this.run(statement + ";");
       } catch (err) {
         const error = err as { code?: string; message?: string };
         // Skip if table already exists
@@ -63,8 +57,5 @@ export const initializeDatabase = async () => {
       }
     }
     console.log("Database schema initialized");
-  } catch (error) {
-    console.error("Error initializing database:", error);
-    process.exit(1);
   }
-};
+}

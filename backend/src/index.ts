@@ -1,11 +1,12 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { initializeDatabase } from "./dbclient/maindb";
+import MainDB from "./dbclient/maindb";
+import ChromaDB from "./dbclient/chromadb";
 import { BookChapterCreate, BookCreate, BookPageCreate } from "@shared/types";
-import { BookController } from "./controllers/book";
-import { BookChapterController } from "./controllers/bookChapter";
-import { BookPageController } from "./controllers/bookPage";
+import BookController from "./controllers/book";
+import BookChapterController from "./controllers/bookChapter";
+import BookPageController from "./controllers/bookPage";
 
 dotenv.config({
   path: "../.env",
@@ -16,7 +17,8 @@ const app = express();
 
 const main = async () => {
   // Initialize database
-  await initializeDatabase();
+  await MainDB.initialize();
+  await ChromaDB.initialize();
 
   // Middleware
   app.use(cors());

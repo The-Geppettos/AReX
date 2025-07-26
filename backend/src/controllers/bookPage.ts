@@ -1,19 +1,20 @@
 import { generateId } from "../util";
-import { maindb } from "../dbclient/maindb";
+import MainDB from "../dbclient/maindb";
 import { BookChapter, BookPage, BookPageDetail } from "@shared/types";
+import ChromaDB from "../dbclient/chromadb";
 
-export class BookPageController {
+export default class BookPageController {
   static async getBookPage(
     boodId: string,
     pageNumber: number,
   ): Promise<BookPageDetail | null> {
-    const bookPage = await maindb.get<BookPage>(
+    const bookPage = await MainDB.get<BookPage>(
       "SELECT * FROM book_pages WHERE book_id = ? AND page_number = ?",
       [boodId, pageNumber],
     );
     if (!bookPage) return null;
 
-    const isFirstPageOfChapter = await maindb.get<{ is_first: number }>(
+    const isFirstPageOfChapter = await MainDB.get<{ is_first: number }>(
       "SELECT COUNT(*) AS is_first FROM book_pages WHERE book_id = ? AND chapter_id = ? AND page_number < ?",
       [boodId, bookPage.chapter_id, pageNumber],
     );
@@ -21,7 +22,7 @@ export class BookPageController {
     let chapterTitle: string | null = null;
 
     if (isFirstPageOfChapter && isFirstPageOfChapter.is_first === 0) {
-      const chapter = await maindb.get<BookChapter>(
+      const chapter = await MainDB.get<BookChapter>(
         "SELECT title FROM book_chapters WHERE id = ?",
         [bookPage.chapter_id],
       );
@@ -52,7 +53,7 @@ export class BookPageController {
     let offsetStart = 0;
 
     if (pageNumber > 1) {
-      const lastPage = await maindb.get<BookPage>(
+      const lastPage = await MainDB.get<BookPage>(
         "SELECT offset_end FROM book_pages WHERE book_id = ? AND page_number = ?",
         [bookId, pageNumber - 1],
       );
@@ -64,7 +65,7 @@ export class BookPageController {
 
     const offsetEnd = offsetStart + contentLength - 1;
 
-    await maindb.run(
+    await MainDB.run(
       "INSERT INTO book_pages (id, book_id, chapter_id, content, page_number, content_length, offset_start, offset_end, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         bookPageId,
@@ -79,6 +80,18 @@ export class BookPageController {
       ],
     );
 
+    await ChromaDB.bookCollection.add({
+      ids: [bookPageId],
+      documents: [content],
+      metadatas: [
+        {
+          book_id: bookId,
+          chapter_id: chapterId,
+          page_number: pageNumber,
+        },
+      ],
+    });
+
     return {
       id: bookPageId,
       book_id: bookId,
@@ -91,4 +104,4 @@ export class BookPageController {
       created_at: createdAt,
     };
   }
-};
+}

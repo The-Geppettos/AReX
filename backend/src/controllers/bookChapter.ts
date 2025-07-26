@@ -1,8 +1,8 @@
 import { generateId } from "../util";
-import { maindb } from "../dbclient/maindb";
+import MainDB from "../dbclient/maindb";
 import { BookChapter } from "@shared/types";
 
-export class BookChapterController {
+export default class BookChapterController {
   static async createChapter(
     bookId: string,
     chapterNumber: number,
@@ -11,7 +11,7 @@ export class BookChapterController {
     const chapterId = generateId();
     const createdAt = new Date().toISOString();
 
-    await maindb.run(
+    await MainDB.run(
       "INSERT INTO book_chapters (id, book_id, chapter_number, title, created_at) VALUES (?, ?, ?, ?, ?)",
       [chapterId, bookId, chapterNumber, title, createdAt],
     );

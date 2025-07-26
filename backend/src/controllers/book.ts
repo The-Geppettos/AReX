@@ -1,19 +1,19 @@
 import { generateId } from "../util";
-import { maindb } from "../dbclient/maindb";
+import MainDB from "../dbclient/maindb";
 import { Book, BookDetail, BookList } from "@shared/types";
 
-export class BookController {
+export default class BookController {
   static async getPublishedBooks(
     offset: number,
     limit: number,
   ): Promise<BookList> {
-    const total = await maindb.get<{ total: number }>(
+    const total = await MainDB.get<{ total: number }>(
       "SELECT COUNT(*) AS total FROM books WHERE status = 'published'",
     );
     if (!total) {
       throw new Error("Failed to fetch total count of published books");
     }
-    const books = await maindb.all<Book>(
+    const books = await MainDB.all<Book>(
       "SELECT * FROM books WHERE status = 'published' ORDER BY updated_at DESC LIMIT ? OFFSET ?",
       [limit, offset],
     );
@@ -26,13 +26,13 @@ export class BookController {
   }
 
   static async getAllBooks(offset: number, limit: number): Promise<BookList> {
-    const total = await maindb.get<{ total: number }>(
+    const total = await MainDB.get<{ total: number }>(
       "SELECT COUNT(*) AS total FROM books",
     );
     if (!total) {
       throw new Error("Failed to fetch total count of books");
     }
-    const books = await maindb.all<Book>(
+    const books = await MainDB.all<Book>(
       "SELECT * FROM books ORDER BY updated_at DESC LIMIT ? OFFSET ?",
       [limit, offset],
     );
@@ -46,12 +46,12 @@ export class BookController {
 
   static async publishBook(id: string): Promise<Book> {
     const updatedAt = new Date().toISOString();
-    await maindb.run(
+    await MainDB.run(
       "UPDATE books SET status = 'published', updated_at = ? WHERE id = ?",
       [updatedAt, id],
     );
 
-    const book = await maindb.get<Book>("SELECT * FROM books WHERE id = ?", [
+    const book = await MainDB.get<Book>("SELECT * FROM books WHERE id = ?", [
       id,
     ]);
 
@@ -67,12 +67,12 @@ export class BookController {
 
   static async unPublishBook(id: string): Promise<Book> {
     const updatedAt = new Date().toISOString();
-    await maindb.run(
+    await MainDB.run(
       "UPDATE books SET status = 'draft', updated_at = ? WHERE id = ?",
       [updatedAt, id],
     );
 
-    const book = await maindb.get<Book>("SELECT * FROM books WHERE id = ?", [
+    const book = await MainDB.get<Book>("SELECT * FROM books WHERE id = ?", [
       id,
     ]);
 
@@ -87,11 +87,11 @@ export class BookController {
   }
 
   static async getById(id: string): Promise<BookDetail | null> {
-    const book = await maindb.get<Book>("SELECT * FROM books WHERE id = ?", [
+    const book = await MainDB.get<Book>("SELECT * FROM books WHERE id = ?", [
       id,
     ]);
 
-    const totalPages = await maindb.get<{ total_pages: number }>(
+    const totalPages = await MainDB.get<{ total_pages: number }>(
       "SELECT MAX(page_number) AS total_pages FROM book_pages WHERE book_id = ?",
       [id],
     );
@@ -108,7 +108,7 @@ export class BookController {
     const bookId = generateId();
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
-    await maindb.run(
+    await MainDB.run(
       "INSERT INTO books (id, title, author, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
       [bookId, title, author, "draft", createdAt, updatedAt],
     );
