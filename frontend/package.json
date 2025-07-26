@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "node setup.js && vite",
+    "build": "node setup.js && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

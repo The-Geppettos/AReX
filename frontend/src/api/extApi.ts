@@ -11,7 +11,7 @@ import type {
 import axios from "axios";
 
 const request = axios.create({
-  baseURL: "http://localhost:3001",
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3001",
 });
 
 class ExtAPI {

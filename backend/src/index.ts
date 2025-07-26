@@ -1,14 +1,17 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { bookChapterOperations, bookOperations } from "./db/operations";
-import { bookPageOperations } from "./db/operations";
-import { initializeDatabase } from "./db";
+import { initializeDatabase } from "./dbclient/maindb";
 import { BookChapterCreate, BookCreate, BookPageCreate } from "@shared/types";
+import { BookController } from "./controllers/book";
+import { BookChapterController } from "./controllers/bookChapter";
+import { BookPageController } from "./controllers/bookPage";
 
-dotenv.config();
+dotenv.config({
+  path: "../.env",
+});
 
-const port = process.env.PORT || 3001;
+const port = process.env.BACKEND_PORT || 3001;
 const app = express();
 
 const main = async () => {
@@ -30,7 +33,7 @@ const main = async () => {
     const limit = parseInt(req.params.limit, 10);
 
     try {
-      const books = await bookOperations.getPublishedBooks(offset, limit);
+      const books = await BookController.getPublishedBooks(offset, limit);
       res.json(books);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch books" });
@@ -42,7 +45,7 @@ const main = async () => {
     const limit = parseInt(req.params.limit, 10);
 
     try {
-      const books = await bookOperations.getAllBooks(offset, limit);
+      const books = await BookController.getAllBooks(offset, limit);
       res.json(books);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all books" });
@@ -61,7 +64,7 @@ const main = async () => {
           .status(400)
           .json({ error: "Title and author must be strings" });
       }
-      const book = await bookOperations.createBook(title, author);
+      const book = await BookController.createBook(title, author);
       res.status(201).json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to create book" });
@@ -70,7 +73,7 @@ const main = async () => {
 
   app.get("/api/book/:id", async (req, res) => {
     try {
-      const book = await bookOperations.getById(req.params.id);
+      const book = await BookController.getById(req.params.id);
       if (!book) {
         return res.status(404).json({ error: "Book not found" });
       }
@@ -83,7 +86,7 @@ const main = async () => {
   app.put("/api/book/:id/publish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await bookOperations.publishBook(id);
+      const book = await BookController.publishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to publish book" });
@@ -93,7 +96,7 @@ const main = async () => {
   app.put("/api/book/:id/unpublish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await bookOperations.unPublishBook(id);
+      const book = await BookController.unPublishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to unpublish book" });
@@ -115,7 +118,7 @@ const main = async () => {
     }
 
     try {
-      const chapter = await bookChapterOperations.createChapter(
+      const chapter = await BookChapterController.createChapter(
         id,
         chapter_number,
         title,
@@ -145,7 +148,7 @@ const main = async () => {
     }
 
     try {
-      const bookPage = await bookPageOperations.createBookPage(
+      const bookPage = await BookPageController.createBookPage(
         id,
         chapter_id,
         page_number,
@@ -160,7 +163,7 @@ const main = async () => {
   app.get("/api/book/:id/page/:page", async (req, res) => {
     const { id, page } = req.params;
     try {
-      const bookPage = await bookPageOperations.getBookPage(id, parseInt(page));
+      const bookPage = await BookPageController.getBookPage(id, parseInt(page));
       if (!bookPage) {
         return res.status(404).json({ error: "Book page not found" });
       }

@@ -55,7 +55,7 @@ const ManageBooks = () => {
       ) : (
         <BookListGrid>
           {bookList.books.map((book) => (
-            <Card>
+            <Card key={book.id}>
               <CardContent>
                 <Typography variant="h5" component="div">
                   {book.title}
