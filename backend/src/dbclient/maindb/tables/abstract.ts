@@ -43,7 +43,11 @@ export default abstract class Table<T extends object = {}> {
     const placeholders = [];
     for (const [key, value] of Object.entries(instance)) {
       fields.push(key);
-      params.push(value);
+      if (typeof value === "boolean") {
+        params.push(value ? 1 : 0);
+      } else {
+        params.push(value);
+      }
       placeholders.push("?");
     }
 

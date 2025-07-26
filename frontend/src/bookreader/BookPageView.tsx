@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { BOOK_PAGE_WIDTH } from "./const";
 
 interface BookPageViewProps {
   chapterTitle: string | null;
   content: string | null;
+  firstLineIndent: boolean;
   width: number;
   ref?: React.RefObject<HTMLDivElement>;
 }
@@ -11,10 +12,16 @@ interface BookPageViewProps {
 const BookPageView = ({
   content,
   chapterTitle,
+  firstLineIndent,
   width,
   ref,
 }: BookPageViewProps) => {
   const contentRef = useRef<HTMLDivElement>({} as HTMLDivElement);
+
+  const paragraphs = useMemo(() => {
+    if (!content) return [];
+    return content.trim().split(/\n+/);
+  }, [content]);
 
   useEffect(() => {
     if (ref) {
@@ -35,11 +42,15 @@ const BookPageView = ({
             {chapterTitle}
           </span>
         )}
-        {content && (
-          <span data-type="content-text" className="book-content-text">
-            {content}
-          </span>
-        )}
+        {paragraphs.map((paragraph, index) => (
+          <div
+            data-type="content-text"
+            className={`book-content-text${!firstLineIndent && index === 0 ? "" : " indented"}`}
+            key={index}
+          >
+            {paragraph}
+          </div>
+        ))}
       </div>
     </div>
   );

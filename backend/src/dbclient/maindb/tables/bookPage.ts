@@ -17,6 +17,7 @@ export default class BookPagesTable extends Table<BookPage> {
     content_length: "INTEGER NOT NULL",
     offset_start: "INTEGER NOT NULL",
     offset_end: "INTEGER NOT NULL",
+    paragraph_continues: "BOOLEAN NOT NULL DEFAULT FALSE",
     created_at: "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 

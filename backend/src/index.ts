@@ -137,18 +137,28 @@ const main = async () => {
 
   app.post("/api/book/:id/page", async (req, res) => {
     const { id } = req.params;
-    const { chapter_id, content, page_number } = req.body as BookPageCreate;
+    const { chapter_id, content, page_number, paragraph_continues } =
+      req.body as BookPageCreate;
 
-    if (!chapter_id || !content || !page_number) {
+    if (
+      !chapter_id ||
+      !content ||
+      !page_number ||
+      paragraph_continues === undefined
+    ) {
       return res
         .status(400)
-        .json({ error: "Chapter ID, content, and page number are required" });
+        .json({
+          error:
+            "chapter_id, content, page_number and paragraph_continues are required",
+        });
     }
 
     if (
       typeof chapter_id !== "string" ||
       typeof content !== "string" ||
-      typeof page_number !== "number"
+      typeof page_number !== "number" ||
+      typeof paragraph_continues !== "boolean"
     ) {
       return res.status(400).json({ error: "Invalid page data" });
     }
@@ -159,6 +169,7 @@ const main = async () => {
         chapter_id,
         page_number,
         content,
+        paragraph_continues,
       );
       res.status(201).json(bookPage);
     } catch (error) {

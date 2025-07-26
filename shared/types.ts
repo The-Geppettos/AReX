@@ -40,13 +40,14 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
+  paragraph_continues: boolean;
   created_at: string;
 }
 
 export interface BookPageCreate
   extends Pick<
     BookPage,
-    "book_id" | "chapter_id" | "content" | "page_number"
+    "book_id" | "chapter_id" | "content" | "page_number" | "paragraph_continues"
   > {}
 
 export interface BookPageDetail extends BookPage {

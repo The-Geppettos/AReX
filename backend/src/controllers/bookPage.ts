@@ -53,12 +53,14 @@ export default class BookPageController {
     chapterId: string,
     pageNumber: number,
     content: string,
+    paragraphContinues: boolean,
   ): Promise<BookPage> {
     const bookPage = await this.bookPagesTable.insert({
       book_id: bookId,
       chapter_id: chapterId,
       page_number: pageNumber,
       content,
+      paragraph_continues: paragraphContinues,
     });
 
     await this.bookContentVectorCollection.insert({

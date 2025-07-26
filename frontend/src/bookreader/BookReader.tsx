@@ -163,12 +163,14 @@ const BookReader = ({ bookId }: BookReaderProps) => {
               <BookPageView
                 width={pageWidth}
                 content={leftPage?.content || null}
+                firstLineIndent={!leftPage?.paragraph_continues}
                 chapterTitle={leftPage?.chapter_title || null}
               />
             ) : (
               <BookPageView
                 width={pageWidth}
                 content={rightPage?.content || null}
+                firstLineIndent={!rightPage?.paragraph_continues}
                 chapterTitle={rightPage?.chapter_title || null}
               />
             )
@@ -177,11 +179,13 @@ const BookReader = ({ bookId }: BookReaderProps) => {
               <BookPageView
                 width={pageWidth}
                 content={leftPage?.content || null}
+                firstLineIndent={!leftPage?.paragraph_continues}
                 chapterTitle={leftPage?.chapter_title || null}
               />
               <BookPageView
                 width={pageWidth}
                 content={rightPage?.content || null}
+                firstLineIndent={!rightPage?.paragraph_continues}
                 chapterTitle={rightPage?.chapter_title || null}
               />
             </>

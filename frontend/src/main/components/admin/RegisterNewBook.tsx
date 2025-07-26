@@ -36,6 +36,8 @@ type BookPagenateResponse = {
 type BookPagenateRequest = {
   chapterTitle: string | null;
   content: string;
+  firstLineIndent: boolean;
+  token: string;
   resolve: (value: BookPagenateResponse) => void;
   reject: (reason?: unknown) => void;
 };
@@ -116,13 +118,20 @@ const RegisterNewBook = () => {
     });
   };
 
-  const bookPaginate = (chapterTitle: string | null, content: string) => {
+  const bookPaginate = (
+    chapterTitle: string | null,
+    content: string,
+    firstLineIndent: boolean,
+    token: string,
+  ) => {
     return new Promise<BookPagenateResponse>((resolve, reject) => {
       setBookPaginateRequest({
         chapterTitle,
         content,
+        firstLineIndent,
         resolve,
         reject,
+        token,
       });
     });
   };
@@ -163,34 +172,41 @@ const RegisterNewBook = () => {
           chapter_number: idx + 1,
         });
 
-        const content = await getContentText(chapter.file);
+        let content = await getContentText(chapter.file);
+        content = content.trim().split(/\n+/).join("\n");
 
-        let offset = 0;
+        const tokenPrefix = `book-${createdBook.id}-chapter-${createdChapter.id}`;
+
         let firstPage = true;
 
-        while (offset < content.length) {
-          let pageContent = content.slice(offset);
+        let paragraphContinues = false;
 
+        while (content.length) {
           const response = await bookPaginate(
             firstPage ? chapterTitle : null,
-            pageContent,
+            content,
+            !paragraphContinues,
+            `${tokenPrefix}-${pageNumber}`,
           );
 
-          pageContent = pageContent
-            .slice(0, response.visibleContentLength)
-            .trim();
+          const pageContent = content.slice(0, response.visibleContentLength);
 
-          if (pageContent.length > 0) {
-            await ExtAPI.createBookPage({
-              book_id: createdBook.id,
-              chapter_id: createdChapter.id,
-              content: pageContent,
-              page_number: pageNumber++,
-            });
-          }
+          await ExtAPI.createBookPage({
+            book_id: createdBook.id,
+            chapter_id: createdChapter.id,
+            content: pageContent.trim(),
+            page_number: pageNumber++,
+            paragraph_continues: paragraphContinues,
+          });
+
+          content = content.slice(response.visibleContentLength);
+
+          paragraphContinues =
+            !content.startsWith("\n") && !pageContent.endsWith("\n");
+
+          content = content.trim();
 
           firstPage = false;
-          offset += response.visibleContentLength;
         }
       }
     } catch (error) {
@@ -488,6 +504,7 @@ const BookPaginatorDialog = ({
 }) => {
   const previewRef = useRef<HTMLIFrameElement>({} as HTMLIFrameElement);
   const [isReady, setIsReady] = useState(false);
+  const tokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -509,36 +526,72 @@ const BookPaginatorDialog = ({
   }, []);
 
   useEffect(() => {
-    if (isReady && bookPagenateRequest) {
-      const handleResponse = (event: MessageEvent) => {
-        if (event.source === previewRef.current?.contentWindow) {
-          if (event.data.type === "book-page-preview-completed") {
-            const visibleContentLength = event.data.visible_content_length;
-            if (typeof visibleContentLength !== "number") {
-              bookPagenateRequest.reject(
-                "Invalid response from preview: visible_content_length is not a number.",
-              );
-              return;
-            }
-            bookPagenateRequest.resolve({ visibleContentLength });
+    if (!bookPagenateRequest) return;
 
-            window.removeEventListener("message", handleResponse);
-          }
-        }
-      };
-
-      window.addEventListener("message", handleResponse);
-
-      previewRef.current.contentWindow?.postMessage(
-        {
-          type: "book-page-preview-start",
-          chapter_title: bookPagenateRequest.chapterTitle,
-          content: bookPagenateRequest.content,
-          width: PREVIEW_WIDTH,
-        },
-        "*",
-      );
+    if (!isReady) {
+      if (tokenRef.current) {
+        console.warn(
+          "Book Preview is unloaded during pagination request. Waiting for reload...",
+        );
+        tokenRef.current = tokenRef.current + "-retry";
+      }
+      return;
     }
+
+    if (tokenRef.current) {
+      console.log("Book Preview is reloaded. Retrying pagination request...");
+    } else {
+      tokenRef.current = bookPagenateRequest.token;
+    }
+
+    const reqToken = tokenRef.current;
+
+    const handleResponse = (event: MessageEvent) => {
+      if (event.source === previewRef.current?.contentWindow) {
+        if (event.data.type === "book-page-preview-completed") {
+          const resToken = event.data.token;
+          if (!resToken) {
+            console.warn("Received response without token. Ignoring.");
+            return;
+          }
+          if (reqToken !== resToken) {
+            console.warn(
+              `Received response with token ${resToken}, expected ${reqToken}. Ignoring.`,
+            );
+            return;
+          }
+          const visibleContentLength = event.data.visible_content_length;
+          if (typeof visibleContentLength !== "number") {
+            bookPagenateRequest.reject(
+              "Invalid response from preview: visible_content_length is not a number.",
+            );
+            return;
+          }
+          tokenRef.current = null;
+          bookPagenateRequest.resolve({ visibleContentLength });
+
+          window.removeEventListener("message", handleResponse);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleResponse);
+
+    previewRef.current.contentWindow?.postMessage(
+      {
+        type: "book-page-preview-start",
+        chapter_title: bookPagenateRequest.chapterTitle,
+        content: bookPagenateRequest.content,
+        first_line_indent: bookPagenateRequest.firstLineIndent,
+        width: PREVIEW_WIDTH,
+        token: reqToken,
+      },
+      "*",
+    );
+
+    return () => {
+      window.removeEventListener("message", handleResponse);
+    };
   }, [isReady, bookPagenateRequest]);
 
   return (
