@@ -1,7 +1,7 @@
 import type { BookChapter } from "@shared/types";
-import type BookChaptersTable from "../dbclient/maindb/tables/bookChapter";
+import type { BookChaptersTable } from "../dbclient/maindb/tables/bookChapter";
 
-export default class BookChapterController {
+export class BookChapterController {
   private bookChaptersTable: BookChaptersTable;
 
   constructor(bookChaptersTable: BookChaptersTable) {

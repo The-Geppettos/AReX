@@ -1,7 +1,7 @@
 import type { Collection } from "chromadb";
-import type ChromaDB from "..";
+import type { ChromaDB } from "..";
 
-export default abstract class VectorCollection {
+export abstract class VectorCollection {
   abstract collectionName: string;
 
   protected collection: Collection | undefined;

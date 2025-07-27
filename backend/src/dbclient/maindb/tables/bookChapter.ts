@@ -1,11 +1,11 @@
 import type { BookChapter, BookChapterCreate } from "@shared/types";
-import type MainDB from "..";
-import type BooksTable from "./books";
+import type { MainDB } from "..";
+import type { BooksTable } from "./books";
 
-import Table from "./abstract";
+import { Table } from "./abstract";
 import { generateId } from "../../../util";
 
-export default class BookChaptersTable extends Table<BookChapter> {
+export class BookChaptersTable extends Table<BookChapter> {
   tableName = "book_chapters";
 
   protected schema = {

@@ -1,9 +1,9 @@
-import type Table from "./tables/abstract";
+import type { Table } from "./tables/abstract";
 
 import Database from "better-sqlite3";
 import path from "path";
 
-export default class MainDB {
+export class MainDB {
   private instance: Database.Database | undefined;
 
   private tables: Table[] = [];

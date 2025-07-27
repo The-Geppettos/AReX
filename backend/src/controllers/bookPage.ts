@@ -1,9 +1,9 @@
-import type BookPagesTable from "../dbclient/maindb/tables/bookPage";
-import type BookChaptersTable from "../dbclient/maindb/tables/bookChapter";
-import type BookContentVectorCollection from "../dbclient/chromadb/vectorCollections/bookContent";
+import type { BookPagesTable } from "../dbclient/maindb/tables/bookPage";
+import type { BookChaptersTable } from "../dbclient/maindb/tables/bookChapter";
+import type { BookContentVectorCollection } from "../dbclient/chromadb/vectorCollections/bookContent";
 import type { BookPage, BookPageDetail } from "@shared/types";
 
-export default class BookPageController {
+export class BookPageController {
   private bookPagesTable: BookPagesTable;
   private bookChaptersTable: BookChaptersTable;
   private bookContentVectorCollection: BookContentVectorCollection;
@@ -28,16 +28,9 @@ export default class BookPageController {
     );
     if (!bookPage) return null;
 
-    const isFirstPageOfChapter =
-      await this.bookPagesTable.getIsFirstPageOfChapter(
-        boodId,
-        pageNumber,
-        bookPage.chapter_id,
-      );
-
     let chapterTitle: string | null = null;
 
-    if (isFirstPageOfChapter) {
+    if (bookPage.page_transition_type === "new_chapter") {
       const chapter = await this.bookChaptersTable.getById(bookPage.chapter_id);
       chapterTitle = chapter ? chapter.title : null;
     }
@@ -53,14 +46,18 @@ export default class BookPageController {
     chapterId: string,
     pageNumber: number,
     content: string,
-    paragraphContinues: boolean,
+    pageTransitionType:
+      | "new_chapter"
+      | "line_break"
+      | "space"
+      | "intra_word_break",
   ): Promise<BookPage> {
     const bookPage = await this.bookPagesTable.insert({
       book_id: bookId,
       chapter_id: chapterId,
       page_number: pageNumber,
       content,
-      paragraph_continues: paragraphContinues,
+      page_transition_type: pageTransitionType,
     });
 
     await this.bookContentVectorCollection.insert({

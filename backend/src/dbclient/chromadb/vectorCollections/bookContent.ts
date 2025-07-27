@@ -1,6 +1,6 @@
-import VectorCollection from "./abstract";
+import { VectorCollection } from "./abstract";
 
-export default class BookContentVectorCollection extends VectorCollection {
+export class BookContentVectorCollection extends VectorCollection {
   collectionName = "book_content";
 
   async insert(data: {

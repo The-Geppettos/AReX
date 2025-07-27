@@ -28,6 +28,8 @@ import {
 } from "@mui/icons-material";
 import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "../../../bookreader/const";
 import ExtAPI from "../../../api/extApi";
+import type { BookPage } from "@shared/types";
+import { indentFirstLine, TextProcessor } from "../../../lib";
 
 type BookPagenateResponse = {
   visibleContentLength: number;
@@ -173,19 +175,24 @@ const RegisterNewBook = () => {
         });
 
         let content = await getContentText(chapter.file);
-        content = content.trim().split(/\n+/).join("\n");
+        content = TextProcessor.fromText(content)
+          .trim()
+          .removeDuplicateLineBreaks()
+          .removeDuplicateSpaces()
+          .result();
 
         const tokenPrefix = `book-${createdBook.id}-chapter-${createdChapter.id}`;
 
         let firstPage = true;
 
-        let paragraphContinues = false;
+        let pageTransitionType: BookPage["page_transition_type"] =
+          "new_chapter";
 
         while (content.length) {
           const response = await bookPaginate(
             firstPage ? chapterTitle : null,
             content,
-            !paragraphContinues,
+            indentFirstLine(pageTransitionType),
             `${tokenPrefix}-${pageNumber}`,
           );
 
@@ -194,17 +201,22 @@ const RegisterNewBook = () => {
           await ExtAPI.createBookPage({
             book_id: createdBook.id,
             chapter_id: createdChapter.id,
-            content: pageContent.trim(),
+            content: TextProcessor.fromText(pageContent).trim().result(),
             page_number: pageNumber++,
-            paragraph_continues: paragraphContinues,
+            page_transition_type: pageTransitionType,
           });
 
           content = content.slice(response.visibleContentLength);
 
-          paragraphContinues =
-            !content.startsWith("\n") && !pageContent.endsWith("\n");
+          if (content.startsWith("\n") || pageContent.endsWith("\n")) {
+            pageTransitionType = "line_break";
+          } else if (content.startsWith(" ") || pageContent.endsWith(" ")) {
+            pageTransitionType = "space";
+          } else {
+            pageTransitionType = "intra_word_break";
+          }
 
-          content = content.trim();
+          content = TextProcessor.fromText(content).trim().result();
 
           firstPage = false;
         }
@@ -539,6 +551,7 @@ const BookPaginatorDialog = ({
     }
 
     if (tokenRef.current) {
+      console.warn("Book Preview is reloaded. Retrying pagination request...");
     } else {
       tokenRef.current = bookPagenateRequest.token;
     }

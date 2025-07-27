@@ -40,14 +40,22 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
-  paragraph_continues: boolean;
+  page_transition_type:
+    | "new_chapter"
+    | "line_break"
+    | "space"
+    | "intra_word_break";
   created_at: string;
 }
 
 export interface BookPageCreate
   extends Pick<
     BookPage,
-    "book_id" | "chapter_id" | "content" | "page_number" | "paragraph_continues"
+    | "book_id"
+    | "chapter_id"
+    | "content"
+    | "page_number"
+    | "page_transition_type"
   > {}
 
 export interface BookPageDetail extends BookPage {

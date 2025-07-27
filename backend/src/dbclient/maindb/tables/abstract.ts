@@ -1,6 +1,6 @@
-import type MainDB from "..";
+import type { MainDB } from "..";
 
-export default abstract class Table<T extends object = {}> {
+export abstract class Table<T extends object = {}> {
   abstract tableName: string;
 
   protected abstract schema: { [field in keyof T]: string };

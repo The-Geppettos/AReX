@@ -1,10 +1,10 @@
-import type VectorCollection from "./vectorCollections/abstract";
+import type { VectorCollection } from "./vectorCollections/abstract";
 import type { EmbeddingFunction } from "chromadb";
 
 import { OpenAIEmbeddingFunction } from "@chroma-core/openai";
 import { ChromaClient } from "chromadb";
 
-export default class ChromaDB {
+export class ChromaDB {
   private client: ChromaClient | undefined;
   private embeddingFunction: EmbeddingFunction | undefined;
 

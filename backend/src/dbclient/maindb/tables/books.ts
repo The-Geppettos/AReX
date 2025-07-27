@@ -1,9 +1,9 @@
 import type { Book, BookCreate, BookList } from "@shared/types";
 
-import Table from "./abstract";
+import { Table } from "./abstract";
 import { generateId } from "../../../util";
 
-export default class BooksTable extends Table<Book> {
+export class BooksTable extends Table<Book> {
   tableName = "books";
 
   protected schema = {

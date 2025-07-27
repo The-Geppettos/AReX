@@ -3,6 +3,7 @@ import type { BookDetail, BookPageDetail } from "@shared/types";
 import ExtAPI from "../api/extApi";
 import BookPageView from "./BookPageView";
 import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "./const";
+import { indentFirstLine } from "../lib";
 
 interface BookReaderProps {
   bookId: string;
@@ -163,14 +164,18 @@ const BookReader = ({ bookId }: BookReaderProps) => {
               <BookPageView
                 width={pageWidth}
                 content={leftPage?.content || null}
-                firstLineIndent={!leftPage?.paragraph_continues}
+                firstLineIndent={indentFirstLine(
+                  leftPage?.page_transition_type,
+                )}
                 chapterTitle={leftPage?.chapter_title || null}
               />
             ) : (
               <BookPageView
                 width={pageWidth}
                 content={rightPage?.content || null}
-                firstLineIndent={!rightPage?.paragraph_continues}
+                firstLineIndent={indentFirstLine(
+                  rightPage?.page_transition_type,
+                )}
                 chapterTitle={rightPage?.chapter_title || null}
               />
             )
@@ -179,13 +184,17 @@ const BookReader = ({ bookId }: BookReaderProps) => {
               <BookPageView
                 width={pageWidth}
                 content={leftPage?.content || null}
-                firstLineIndent={!leftPage?.paragraph_continues}
+                firstLineIndent={indentFirstLine(
+                  leftPage?.page_transition_type,
+                )}
                 chapterTitle={leftPage?.chapter_title || null}
               />
               <BookPageView
                 width={pageWidth}
                 content={rightPage?.content || null}
-                firstLineIndent={!rightPage?.paragraph_continues}
+                firstLineIndent={indentFirstLine(
+                  rightPage?.page_transition_type,
+                )}
                 chapterTitle={rightPage?.chapter_title || null}
               />
             </>

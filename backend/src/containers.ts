@@ -1,16 +1,16 @@
-import MainDB from "./dbclient/maindb";
+import { MainDB } from "./dbclient/maindb";
 
-import BooksTable from "./dbclient/maindb/tables/books";
-import BookChaptersTable from "./dbclient/maindb/tables/bookChapter";
-import BookPagesTable from "./dbclient/maindb/tables/bookPage";
+import { BooksTable } from "./dbclient/maindb/tables/books";
+import { BookChaptersTable } from "./dbclient/maindb/tables/bookChapter";
+import { BookPagesTable } from "./dbclient/maindb/tables/bookPage";
 
-import ChromaDB from "./dbclient/chromadb";
+import { ChromaDB } from "./dbclient/chromadb";
 
-import BookContentVectorCollection from "./dbclient/chromadb/vectorCollections/bookContent";
+import { BookContentVectorCollection } from "./dbclient/chromadb/vectorCollections/bookContent";
 
-import BookController from "./controllers/book";
-import BookChapterController from "./controllers/bookChapter";
-import BookPageController from "./controllers/bookPage";
+import { BookController } from "./controllers/book";
+import { BookChapterController } from "./controllers/bookChapter";
+import { BookPageController } from "./controllers/bookPage";
 
 export const mainDb = new MainDB();
 

@@ -1,11 +1,11 @@
 import type { BookPage, BookPageCreate } from "@shared/types";
-import type BooksTable from "./books";
-import type BookChaptersTable from "./bookChapter";
+import type { BooksTable } from "./books";
+import type { BookChaptersTable } from "./bookChapter";
 
-import Table from "./abstract";
+import { Table } from "./abstract";
 import { generateId } from "../../../util";
 
-export default class BookPagesTable extends Table<BookPage> {
+export class BookPagesTable extends Table<BookPage> {
   tableName = "book_pages";
 
   protected schema = {
@@ -17,7 +17,8 @@ export default class BookPagesTable extends Table<BookPage> {
     content_length: "INTEGER NOT NULL",
     offset_start: "INTEGER NOT NULL",
     offset_end: "INTEGER NOT NULL",
-    paragraph_continues: "BOOLEAN NOT NULL DEFAULT FALSE",
+    page_transition_type:
+      "TEXT NOT NULL CHECK (page_transition_type IN ('new_chapter', 'line_break', 'space', 'intra_word_break'))",
     created_at: "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 
@@ -91,18 +92,5 @@ export default class BookPagesTable extends Table<BookPage> {
       `SELECT * FROM ${this.tableName} WHERE ${this.fields.book_id} = ? AND ${this.fields.page_number} = ?`,
       [bookId, pageNumber],
     );
-  }
-
-  async getIsFirstPageOfChapter(
-    bookId: string,
-    pageNumber: number,
-    chapterId: string,
-  ): Promise<boolean> {
-    const result = await this.mainDb.get<{ is_first: number }>(
-      `SELECT COUNT(*) AS is_first FROM ${this.tableName} WHERE ${this.fields.book_id} = ? AND ${this.fields.chapter_id} = ? AND ${this.fields.page_number} < ?`,
-      [bookId, chapterId, pageNumber],
-    );
-
-    return result ? result.is_first === 0 : false;
   }
 }

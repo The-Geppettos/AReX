@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BOOK_PAGE_WIDTH } from "./const";
+import { TextProcessor } from "../lib";
 
 interface BookPageViewProps {
   chapterTitle: string | null;
@@ -20,7 +21,10 @@ const BookPageView = ({
 
   const paragraphs = useMemo(() => {
     if (!content) return [];
-    return content.trim().split(/\n+/);
+    return TextProcessor.fromText(content)
+      .trim()
+      .removeDuplicateSpaces()
+      .splitLineBreak();
   }, [content]);
 
   useEffect(() => {

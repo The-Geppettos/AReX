@@ -1,8 +1,8 @@
 import type { Book, BookDetail, BookList } from "@shared/types";
-import type BooksTable from "../dbclient/maindb/tables/books";
-import type BookPagesTable from "../dbclient/maindb/tables/bookPage";
+import type { BooksTable } from "../dbclient/maindb/tables/books";
+import type { BookPagesTable } from "../dbclient/maindb/tables/bookPage";
 
-export default class BookController {
+export class BookController {
   private booksTable: BooksTable;
   private bookPagesTable: BookPagesTable;
 
