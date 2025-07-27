@@ -209,15 +209,15 @@ const RegisterNewBook = () => {
           firstPage = false;
         }
       }
+      alert(
+        "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
+      );
     } catch (error) {
       console.error("Error generating page:", error);
       alert("Failed to generate page for chapter.");
     } finally {
       endBookPaginate();
       setIsUploading(false);
-      alert(
-        "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
-      );
     }
   };
 
