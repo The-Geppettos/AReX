@@ -539,7 +539,6 @@ const BookPaginatorDialog = ({
     }
 
     if (tokenRef.current) {
-      console.log("Book Preview is reloaded. Retrying pagination request...");
     } else {
       tokenRef.current = bookPagenateRequest.token;
     }

@@ -98,7 +98,6 @@ const BookPagePreview = () => {
           const textNode = node.childNodes[0];
           if (textNode && textNode.nodeType === Node.TEXT_NODE) {
             const contentText = node.textContent || "";
-            console.log(contentText);
 
             const range = document.createRange();
 
