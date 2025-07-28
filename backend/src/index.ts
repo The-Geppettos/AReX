@@ -30,7 +30,6 @@ const main = async () => {
     res.json({ status: "ok" });
   });
 
-  // Book endpoints
   app.get("/api/books/published/:offset/:limit", async (req, res) => {
     const offset = parseInt(req.params.offset, 10);
     const limit = parseInt(req.params.limit, 10);

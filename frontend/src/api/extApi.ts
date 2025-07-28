@@ -10,16 +10,14 @@ import type {
 } from "@shared/types";
 import axios from "axios";
 
-const request = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3001",
-});
+const axiosInstance = axios.create();
 
 class ExtAPI {
   static async getPublishedBookList(
     offset: number,
     limit: number,
   ): Promise<BookList> {
-    const response = await request.get(
+    const response = await axiosInstance.get(
       `/api/books/published/${offset}/${limit}`,
     );
     return response.data;
@@ -29,12 +27,14 @@ class ExtAPI {
     offset: number,
     limit: number,
   ): Promise<BookList> {
-    const response = await request.get(`/api/books/all/${offset}/${limit}`);
+    const response = await axiosInstance.get(
+      `/api/books/all/${offset}/${limit}`,
+    );
     return response.data;
   }
 
   static async getBookInfo(id: string): Promise<BookDetail> {
-    const response = await request.get(`/api/book/${id}`);
+    const response = await axiosInstance.get(`/api/book/${id}`);
     return response.data;
   }
 
@@ -57,7 +57,7 @@ class ExtAPI {
       this.bookPageCache.set(bookId, cached);
     }
 
-    const response = await request.get(
+    const response = await axiosInstance.get(
       `/api/book/${bookId}/page/${page_number}`,
     );
 
@@ -67,14 +67,14 @@ class ExtAPI {
   }
 
   static async createBook(bookInfo: BookCreate): Promise<Book> {
-    const response = await request.post("/api/book", bookInfo);
+    const response = await axiosInstance.post("/api/book", bookInfo);
     return response.data;
   }
 
   static async createBookChapter(
     chapterInfo: BookChapterCreate,
   ): Promise<BookChapter> {
-    const response = await request.post(
+    const response = await axiosInstance.post(
       `/api/book/${chapterInfo.book_id}/chapter`,
       chapterInfo,
     );
@@ -84,7 +84,7 @@ class ExtAPI {
   static async createBookPage(
     bookPageInfo: BookPageCreate,
   ): Promise<BookPageDetail> {
-    const response = await request.post(
+    const response = await axiosInstance.post(
       `/api/book/${bookPageInfo.book_id}/page`,
       bookPageInfo,
     );
@@ -94,12 +94,12 @@ class ExtAPI {
   }
 
   static async publishBook(id: string): Promise<Book> {
-    const response = await request.put(`/api/book/${id}/publish`);
+    const response = await axiosInstance.put(`/api/book/${id}/publish`);
     return response.data;
   }
 
   static async unPublishBook(id: string): Promise<Book> {
-    const response = await request.put(`/api/book/${id}/unpublish`);
+    const response = await axiosInstance.put(`/api/book/${id}/unpublish`);
     return response.data;
   }
 }

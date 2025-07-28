@@ -1,0 +1,70 @@
+services:
+  frontend:
+    image: node:lts-jod
+    container_name: frontend
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/frontend/node_modules
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${FRONTEND_DEV_PORT}:${FRONTEND_DEV_PORT}"
+    depends_on:
+      - backend
+
+  backend:
+    image: node:lts-jod
+    container_name: backend
+    working_dir: /app/backend
+    volumes:
+      - ./backend:/app/backend
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/backend/node_modules
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      # - sql
+      # - rabbitmq
+      - chromadb
+
+  # sql:
+  #   image: postgres:15
+  #   container_name: sql
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672" # management UI
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: guest
+  #     RABBITMQ_DEFAULT_PASS: guest
+  #   volumes:
+  #     - rabbitmqdata:/var/lib/rabbitmq
+  #   restart: unless-stopped
+
+  chromadb:
+    image: chromadb/chroma:1.0.16.dev77
+    container_name: chromadb
+    ports:
+      - "${CHROMA_DB_PORT}:${CHROMA_DB_PORT}"
+    expose:
+      - "${CHROMA_DB_PORT}"
+    working_dir: /app/chromadb
+    command: ["run", "--path", "./chroma_data", "--port", "${CHROMA_DB_PORT}", "--host", "chromadb"]
+    volumes:
+      - ./chromadb/chroma_data:/app/chromadb/chroma_data

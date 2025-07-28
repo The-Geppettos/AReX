@@ -33,7 +33,6 @@ export const bookChapterController = new BookChapterController(
 export const bookPageController = new BookPageController(
   bookPagesTable,
   bookChaptersTable,
-  bookContentVectorCollection,
 );
 
 export default {
