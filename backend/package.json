@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc --project tsconfig.json --incremental && tsc-alias",
     "start": "node dist/backend/src/index.js",
-    "dev": "nodemon --watch src --watch ../shared --ext .ts --exec 'npm run build && npm run start'"
+    "clean": "node clean.js dist",
+    "dev": "npm run clean && nodemon --watch src --watch ../shared --ext .ts --exec 'npm run build && npm run start'"
   },
   "keywords": [],
   "author": "",
