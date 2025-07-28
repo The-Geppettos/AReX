@@ -7,7 +7,7 @@ import type {
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import container from "src/container";
+import container from "@src/container";
 
 dotenv.config({
   path: "../.env",

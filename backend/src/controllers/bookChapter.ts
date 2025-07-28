@@ -1,5 +1,5 @@
 import type { BookChapter } from "@shared/types";
-import type { BookChaptersTable } from "src/dbclient/maindb/tables/bookChapter";
+import type { BookChaptersTable } from "@src/dbclient/maindb/tables/bookChapter";
 
 export class BookChapterController {
   private bookChaptersTable: BookChaptersTable;
