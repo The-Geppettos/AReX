@@ -1,7 +1,7 @@
 import type { Book, BookCreate, BookList } from "@shared/types";
 
 import { Table } from "./abstract";
-import { generateId } from "../../../util";
+import { generateId } from "src/util";
 
 export class BooksTable extends Table<Book> {
   tableName = "books";

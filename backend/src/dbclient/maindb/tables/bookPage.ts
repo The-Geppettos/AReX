@@ -3,7 +3,7 @@ import type { BooksTable } from "./books";
 import type { BookChaptersTable } from "./bookChapter";
 
 import { Table } from "./abstract";
-import { generateId } from "../../../util";
+import { generateId } from "src/util";
 
 export class BookPagesTable extends Table<BookPage> {
   tableName = "book_pages";

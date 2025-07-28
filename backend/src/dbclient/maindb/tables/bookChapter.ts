@@ -3,7 +3,7 @@ import type { MainDB } from "..";
 import type { BooksTable } from "./books";
 
 import { Table } from "./abstract";
-import { generateId } from "../../../util";
+import { generateId } from "src/util";
 
 export class BookChaptersTable extends Table<BookChapter> {
   tableName = "book_chapters";

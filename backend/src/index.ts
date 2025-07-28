@@ -7,7 +7,7 @@ import type {
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import containers from "./containers";
+import container from "src/container";
 
 dotenv.config({
   path: "../.env",
@@ -18,8 +18,8 @@ const app = express();
 
 const main = async () => {
   // Initialize database
-  await containers.mainDb.initialize();
-  await containers.chromaDb.initialize();
+  await container.mainDb.initialize();
+  await container.chromaDb.initialize();
 
   // Middleware
   app.use(cors());
@@ -36,7 +36,7 @@ const main = async () => {
     const limit = parseInt(req.params.limit, 10);
 
     try {
-      const books = await containers.bookController.getPublishedBooks(
+      const books = await container.bookController.getPublishedBooks(
         offset,
         limit,
       );
@@ -51,7 +51,7 @@ const main = async () => {
     const limit = parseInt(req.params.limit, 10);
 
     try {
-      const books = await containers.bookController.getAllBooks(offset, limit);
+      const books = await container.bookController.getAllBooks(offset, limit);
       res.json(books);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch all books" });
@@ -70,7 +70,7 @@ const main = async () => {
           .status(400)
           .json({ error: "Title and author must be strings" });
       }
-      const book = await containers.bookController.createBook(title, author);
+      const book = await container.bookController.createBook(title, author);
       res.status(201).json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to create book" });
@@ -79,7 +79,7 @@ const main = async () => {
 
   app.get("/api/book/:id", async (req, res) => {
     try {
-      const book = await containers.bookController.getById(req.params.id);
+      const book = await container.bookController.getById(req.params.id);
       if (!book) {
         return res.status(404).json({ error: "Book not found" });
       }
@@ -92,7 +92,7 @@ const main = async () => {
   app.put("/api/book/:id/publish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await containers.bookController.publishBook(id);
+      const book = await container.bookController.publishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to publish book" });
@@ -102,7 +102,7 @@ const main = async () => {
   app.put("/api/book/:id/unpublish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await containers.bookController.unPublishBook(id);
+      const book = await container.bookController.unPublishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to unpublish book" });
@@ -124,7 +124,7 @@ const main = async () => {
     }
 
     try {
-      const chapter = await containers.bookChapterController.createChapter(
+      const chapter = await container.bookChapterController.createChapter(
         id,
         chapter_number,
         title,
@@ -159,7 +159,7 @@ const main = async () => {
     }
 
     try {
-      const bookPage = await containers.bookPageController.createBookPage(
+      const bookPage = await container.bookPageController.createBookPage(
         id,
         chapter_id,
         page_number,
@@ -175,7 +175,7 @@ const main = async () => {
   app.get("/api/book/:id/page/:page", async (req, res) => {
     const { id, page } = req.params;
     try {
-      const bookPage = await containers.bookPageController.getBookPage(
+      const bookPage = await container.bookPageController.getBookPage(
         id,
         parseInt(page),
       );

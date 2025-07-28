@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --project tsconfig.json --require tsconfig-paths/register --respawn --transpile-only src/index.ts",
     "build": "tsc"
   },
   "keywords": [],
@@ -28,6 +28,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0"
   }
 }

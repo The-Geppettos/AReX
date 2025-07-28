@@ -1,6 +1,6 @@
-import type { BookPagesTable } from "../dbclient/maindb/tables/bookPage";
-import type { BookChaptersTable } from "../dbclient/maindb/tables/bookChapter";
-import type { BookContentVectorCollection } from "../dbclient/chromadb/vectorCollections/bookContent";
+import type { BookPagesTable } from "src/dbclient/maindb/tables/bookPage";
+import type { BookChaptersTable } from "src/dbclient/maindb/tables/bookChapter";
+import type { BookContentVectorCollection } from "src/dbclient/chromadb/vectorCollections/bookContent";
 import type { BookPage, BookPageDetail } from "@shared/types";
 
 export class BookPageController {
