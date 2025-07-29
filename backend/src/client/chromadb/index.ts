@@ -15,18 +15,21 @@ export class ChromaDB {
   }
 
   async initialize() {
+    const host = process.env.CHROMA_DB_HOST || "localhost";
+    const port = process.env.CHROMA_DB_PORT
+      ? parseInt(process.env.CHROMA_DB_PORT, 10)
+      : 8000;
+
+    console.log(`Initializing ChromaDB... at ${host}:${port}`);
+
     this.client = new ChromaClient({
-      host: process.env.CHROMA_DB_HOST || "localhost",
-      port: process.env.CHROMA_DB_PORT
-        ? parseInt(process.env.CHROMA_DB_PORT, 10)
-        : 8000,
+      host: host,
+      port: port,
     });
     this.embeddingFunction = new OpenAIEmbeddingFunction({
       modelName: process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small",
       apiKey: process.env.OPENAI_API_KEY,
     });
-
-    console.log("Connecting to ChromaDB...");
 
     for (const vectorCollection of this.vectorCollections) {
       const collection = await this.client.getOrCreateCollection({
@@ -36,6 +39,6 @@ export class ChromaDB {
       vectorCollection.initialize(collection);
     }
 
-    console.log("ChromaDB connection established successfully.");
+    console.log("ChromaDB initialized successfully.");
   }
 }

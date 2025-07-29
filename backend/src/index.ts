@@ -20,6 +20,7 @@ const main = async () => {
   // Initialize database
   await container.mainDb.initialize();
   await container.chromaDb.initialize();
+  await container.rabbitMQ.connect();
 
   // Middleware
   app.use(cors());

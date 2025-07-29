@@ -14,11 +14,13 @@
   "license": "ISC",
   "dependencies": {
     "@chroma-core/openai": "^0.1.7",
+    "@types/amqplib": "^0.10.7",
     "@types/better-sqlite3": "^7.6.9",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.11.19",
     "@types/uuid": "^10.0.0",
+    "amqplib": "^0.10.8",
     "axios": "^1.10.0",
     "better-sqlite3": "^9.4.1",
     "chromadb": "^3.0.10",

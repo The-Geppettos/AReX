@@ -13,6 +13,13 @@ dotenv.config({
   path: "../.env",
 });
 
+const frontendDevPort = process.env.FRONTEND_DEV_PORT
+  ? parseInt(process.env.FRONTEND_DEV_PORT, 10)
+  : 3000;
+
+const backendHost = process.env.BACKEND_HOST || "http://localhost";
+const backendPort = process.env.BACKEND_PORT || "3001";
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -43,15 +50,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: process.env.FRONTEND_DEV_PORT
-      ? parseInt(process.env.FRONTEND_DEV_PORT, 10)
-      : 3000,
+    port: frontendDevPort,
     proxy: {
       "/api": {
-        target:
-          process.env.BACKEND_HOST && process.env.BACKEND_PORT
-            ? `${process.env.BACKEND_HOST}:${process.env.BACKEND_PORT}`
-            : "http://localhost:3001",
+        target: `${backendHost}:${backendPort}`,
         changeOrigin: true,
       },
     },
