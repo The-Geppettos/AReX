@@ -51,4 +51,6 @@ export class MainDB {
 
     console.log("Database schema initialized");
   }
+
+  async close() {}
 }

@@ -7,8 +7,11 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import time
 
+TIMEOUT = 5
+DEBOUNCE_SECONDS = 0.5
+
 class DevHandler(FileSystemEventHandler):
-    def __init__(self, command: list, timeout=5, debounce_seconds=0.5):
+    def __init__(self, command: list, timeout: float, debounce_seconds: float):
         self.command = command
         self.debounce_seconds = debounce_seconds
         self.debounce_timer = None
@@ -59,9 +62,9 @@ def main():
 
     entry_point = os.path.join(path, "main.py")
 
-    command = [sys.executable, entry_point] 
+    command = [sys.executable, "-u", entry_point] 
 
-    event_handler = DevHandler(command)
+    event_handler = DevHandler(command, TIMEOUT, DEBOUNCE_SECONDS)
 
     observer = Observer()
     observer.schedule(event_handler, str(path), recursive=True)
@@ -75,5 +78,5 @@ def main():
         event_handler.stop_process()
     observer.join()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

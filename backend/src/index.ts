@@ -4,61 +4,48 @@ import type {
   BookPageCreate,
 } from "@shared/types";
 
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
 import container from "@src/container";
 
-dotenv.config({
-  path: "../.env",
-});
-
-const port = process.env.BACKEND_PORT || 3001;
-const app = express();
-
 const main = async () => {
-  // Initialize database
-  await container.mainDb.initialize();
-  await container.chromaDb.initialize();
-  await container.rabbitMQ.connect();
-
-  // Middleware
-  app.use(cors());
-  app.use(express.json());
-
   // Basic health check endpoint
-  app.get("/health", (_req, res) => {
+  container.mainServer.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
 
-  app.get("/api/books/published/:offset/:limit", async (req, res) => {
-    const offset = parseInt(req.params.offset, 10);
-    const limit = parseInt(req.params.limit, 10);
+  container.mainServer.get(
+    "/api/books/published/:offset/:limit",
+    async (req, res) => {
+      const offset = parseInt(req.params.offset, 10);
+      const limit = parseInt(req.params.limit, 10);
 
-    try {
-      const books = await container.bookController.getPublishedBooks(
-        offset,
-        limit,
-      );
-      res.json(books);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch books" });
-    }
-  });
+      try {
+        const books = await container.bookController.getPublishedBooks(
+          offset,
+          limit,
+        );
+        res.json(books);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch books" });
+      }
+    },
+  );
 
-  app.get("/api/books/all/:offset/:limit", async (req, res) => {
-    const offset = parseInt(req.params.offset, 10);
-    const limit = parseInt(req.params.limit, 10);
+  container.mainServer.get(
+    "/api/books/all/:offset/:limit",
+    async (req, res) => {
+      const offset = parseInt(req.params.offset, 10);
+      const limit = parseInt(req.params.limit, 10);
 
-    try {
-      const books = await container.bookController.getAllBooks(offset, limit);
-      res.json(books);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch all books" });
-    }
-  });
+      try {
+        const books = await container.bookController.getAllBooks(offset, limit);
+        res.json(books);
+      } catch (error) {
+        res.status(500).json({ error: "Failed to fetch all books" });
+      }
+    },
+  );
 
-  app.post("/api/book", async (req, res) => {
+  container.mainServer.post("/api/book", async (req, res) => {
     try {
       const { title, author } = req.body as BookCreate;
 
@@ -77,7 +64,7 @@ const main = async () => {
     }
   });
 
-  app.get("/api/book/:id", async (req, res) => {
+  container.mainServer.get("/api/book/:id", async (req, res) => {
     try {
       const book = await container.bookController.getById(req.params.id);
       if (!book) {
@@ -89,7 +76,7 @@ const main = async () => {
     }
   });
 
-  app.put("/api/book/:id/publish", async (req, res) => {
+  container.mainServer.put("/api/book/:id/publish", async (req, res) => {
     const { id } = req.params;
     try {
       const book = await container.bookController.publishBook(id);
@@ -99,7 +86,7 @@ const main = async () => {
     }
   });
 
-  app.put("/api/book/:id/unpublish", async (req, res) => {
+  container.mainServer.put("/api/book/:id/unpublish", async (req, res) => {
     const { id } = req.params;
     try {
       const book = await container.bookController.unPublishBook(id);
@@ -109,7 +96,7 @@ const main = async () => {
     }
   });
 
-  app.post("/api/book/:id/chapter", async (req, res) => {
+  container.mainServer.post("/api/book/:id/chapter", async (req, res) => {
     const { id } = req.params;
     const { chapter_number, title } = req.body as BookChapterCreate;
 
@@ -135,7 +122,7 @@ const main = async () => {
     }
   });
 
-  app.post("/api/book/:id/page", async (req, res) => {
+  container.mainServer.post("/api/book/:id/page", async (req, res) => {
     const { id } = req.params;
     const { chapter_id, content, page_number, page_transition_type } =
       req.body as BookPageCreate;
@@ -172,7 +159,7 @@ const main = async () => {
     }
   });
 
-  app.get("/api/book/:id/page/:page", async (req, res) => {
+  container.mainServer.get("/api/book/:id/page/:page", async (req, res) => {
     const { id, page } = req.params;
     try {
       const bookPage = await container.bookPageController.getBookPage(
@@ -188,10 +175,36 @@ const main = async () => {
     }
   });
 
-  // Start server
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+  const gracefulShutdown = async (signal?: NodeJS.Signals) => {
+    if (signal) {
+      console.log(`Received ${signal}, shutting down server...`);
+    } else {
+      console.log("Shutting down server...");
+    }
+
+    await container.mainServer.close();
+    await container.rabbitMQ.close();
+    await container.mainDb.close();
+    await container.chromaDb.close();
+
+    process.exit(0);
+  };
+
+  process.on("SIGINT", gracefulShutdown);
+  process.on("SIGTERM", gracefulShutdown);
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught Exception:", error);
+    gracefulShutdown();
   });
+
+  console.log("Initializing Clients...");
+
+  await container.mainDb.initialize();
+  await container.chromaDb.initialize();
+  await container.rabbitMQ.initialize();
+  container.mainServer.initialize();
+
+  console.log("Clients initialized successfully");
 };
 
 main();

@@ -87,7 +87,7 @@ export class BookPageController {
       }
     }
 
-    this.contentAnalysisQueue.sendMessage(bookPage.id, content, prevContent);
+    await this.contentAnalysisQueue.sendMessage(bookPage.id, content, prevContent);
 
     return bookPage;
   }
