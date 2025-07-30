@@ -60,9 +60,7 @@ def main():
     path = os.path.join(os.path.dirname(__file__),
                         "src")
 
-    entry_point = os.path.join(path, "main.py")
-
-    command = [sys.executable, "-u", entry_point] 
+    command = [sys.executable, "-u", "-m", "src.main"] 
 
     event_handler = DevHandler(command, TIMEOUT, DEBOUNCE_SECONDS)
 

@@ -1,27 +1,14 @@
 import pika
 
-from dotenv import load_dotenv
-from pathlib import Path
-
-import os
 import time
 import signal
 import sys
 
-env_path = Path(
-    os.path.join(os.path.dirname(__file__), "../../.env")).resolve()
-
-load_dotenv(env_path)
+from env import rbmq_host, rbmq_port
 
 RETRY_INTERVAL = 5  # seconds
 
 queue_name = "content-analysis"
-
-rbmq_host = os.getenv("RABBITMQ_HOST")
-rbmq_host = rbmq_host if rbmq_host is not None else "localhost"
-
-rbmq_port = os.getenv("RABBITMQ_PORT")
-rbmq_port = rbmq_port if rbmq_port is not None else "5672"
 
 connection = None
 channel = None
