@@ -17,8 +17,9 @@ const frontendDevPort = process.env.FRONTEND_DEV_PORT
   ? parseInt(process.env.FRONTEND_DEV_PORT, 10)
   : 3000;
 
-const backendHost = process.env.BACKEND_HOST || "http://localhost";
+const backendHost = process.env.BACKEND_HOST || "localhost";
 const backendPort = process.env.BACKEND_PORT || "3001";
+const backendProtocol = process.env.BACKEND_PROTOCOL || "http";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -53,7 +54,7 @@ export default defineConfig({
     port: frontendDevPort,
     proxy: {
       "/api": {
-        target: `${backendHost}:${backendPort}`,
+        target: `${backendProtocol}://${backendHost}:${backendPort}`,
         changeOrigin: true,
       },
     },

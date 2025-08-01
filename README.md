@@ -10,76 +10,41 @@ An intelligent eBook reading application that uses AI to enhance the reading exp
 - User level-based content adaptation
 - Interactive quizzes and summaries
 
-## Project Structure
+## Source Code Structure
 
 ```
 .
 ├── frontend/          # React frontend application
 ├── backend/           # Node.js/Express backend server
-├── ai/                # AI engine for generating explanations and insights
+├── nlp/               # Python NLP module for text processing
 └── shared/            # Shared TypeScript types
 ```
 
-## Setup
+## Architecture Components
+
+The application is built using a microservices architecture with the following components:
+- **Frontend**: A React application that provides the user interface for eBook service and management.
+- **Backend**: A Node.js/Express server that handles API requests. This server is aimed to work like a gateway which handles I/O operations along with simple validations only.
+- **MainDB(PostgreSQL)**: A relational database for storing main content data such as books, user profiles, and reading progress.
+- **VectorDB(ChromaDB)**: A vector database for storing and retrieving book text embeddings for real-time AI-powered features.
+- **MessageBroker(RabbitMQ)**: A message broker for handling asynchronous tasks, mainly for heavy processing tasks like NLP operations.
+- **NLP Module**: A Python-based module that processes heavy NLP tasks which cannot be done in real-time. It communicates with the backend via RabbitMQ.
+
+## Setup for Development
 
 ### Prerequisites
 
-- Node.js (lts/jod)
-- npm
+- Docker
 - OpenAI API key
 
-### Backend Setup
+### Set environment variables
 
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
+copy `.env.example` to `.env` and fill in the required values.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Start the application
 
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
+Start development service using Docker Compose:
 
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-### AI Setup
-
-1. Navigate to the ai directory:
-   ```bash
-   cd ai
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file based on `.env.example` and configure your OpenAI API key.
-   ```bash
-   OPENAI_API_KEY=your_openai_api_key
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+docker-compose up
+```
