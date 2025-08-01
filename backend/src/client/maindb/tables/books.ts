@@ -1,27 +1,37 @@
 import type { Book, BookCreate, BookList } from "@shared/types";
+import type { MainDB } from "..";
 
+import { BOOK_STATUS } from "@shared/types";
 import { Table } from "./abstract";
 import { generateId } from "@src/util";
 
 export class BooksTable extends Table<Book> {
   tableName = "books";
+  idField = "id" as const;
 
   protected schema = {
     id: "TEXT PRIMARY KEY",
     title: "TEXT NOT NULL",
     author: "TEXT NOT NULL",
-    status:
-      "TEXT CHECK(status IN ('draft', 'published')) NOT NULL DEFAULT 'draft'",
-    created_at: "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
-    updated_at: "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    status: "TEXT NOT NULL",
+    created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 
-  async insert(book: BookCreate): Promise<Book> {
+  constructor(mainDb: MainDB) {
+    super(mainDb);
+    this.addConstraint(
+      `CHECK (${this.field("status")} IN (${BOOK_STATUS.map((s) => `'${s}'`).join(", ")}))`,
+    );
+    this.addIndex(this.field("updated_at"), "DESC");
+  }
+
+  async createBook(book: BookCreate): Promise<Book> {
     const id = generateId();
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
 
-    const { query, params } = this.generateInsertQuery({
+    const result = await this.insert({
       ...book,
       id,
       status: "draft",
@@ -29,15 +39,7 @@ export class BooksTable extends Table<Book> {
       updated_at: updatedAt,
     });
 
-    await this.mainDb.run(query, params);
-
-    const newBook = await this.getById(id);
-
-    if (!newBook) {
-      throw new Error("Failed to create book");
-    }
-
-    return newBook;
+    return result[0];
   }
 
   async getList(
@@ -46,45 +48,39 @@ export class BooksTable extends Table<Book> {
     status?: Book["status"],
   ): Promise<BookList> {
     const whereClause = status
-      ? `WHERE ${this.fields.status} = '${status}'`
+      ? `WHERE ${this.field("status")} = '${status}'`
       : "";
 
-    const total = await this.mainDb.get<{ total: number }>(
+    const total = await this.mainDb.query<{ total: string }>(
       `SELECT COUNT(*) AS total FROM ${this.tableName} ${whereClause}`,
     );
 
-    const books = await this.mainDb.all<Book>(
-      `SELECT * FROM ${this.tableName} ${whereClause} ORDER BY ${this.fields.updated_at} DESC LIMIT ? OFFSET ?`,
+    const totalCount = total.rows?.[0]?.total;
+
+    const books = await this.mainDb.query<Book>(
+      `SELECT * FROM ${this.tableName} ${whereClause} ORDER BY ${this.field("updated_at")} DESC LIMIT $1 OFFSET $2`,
       [limit, offset],
     );
 
     return {
-      books,
+      books: books.rows,
       offset,
       limit,
-      total: total?.total || 0,
+      total: totalCount ? parseInt(totalCount) : 0,
     };
   }
 
   async changeBookStatus(id: string, status: Book["status"]): Promise<Book> {
     const updatedAt = new Date().toISOString();
-    await this.mainDb.run(
-      `UPDATE ${this.tableName} SET ${this.fields.status} = ?, ${this.fields.updated_at} = ? WHERE ${this.fields.id} = ?`,
+    const result = await this.mainDb.query<Book>(
+      `UPDATE ${this.tableName} SET ${this.field("status")} = $1, ${this.field("updated_at")} = $2 WHERE ${this.field("id")} = $3 RETURNING *`,
       [status, updatedAt, id],
     );
 
-    const book = await this.mainDb.get<Book>(
-      `SELECT * FROM ${this.tableName} WHERE ${this.fields.id} = ?`,
-      [id],
-    );
-
-    if (!book) {
-      throw new Error("Book not found");
-    }
-    if (book.status !== status) {
+    if (result.rowCount === 0 || result.rows[0].status !== status) {
       throw new Error(`Failed to update book status to ${status}`);
     }
 
-    return book;
+    return result.rows[0];
   }
 }

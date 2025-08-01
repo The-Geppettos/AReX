@@ -1,12 +1,18 @@
-import type { BookPage, BookPageCreate } from "@shared/types";
+import {
+  PAGE_TRANSITION_TYPES,
+  type BookPage,
+  type BookPageCreate,
+} from "@shared/types";
 import type { BooksTable } from "./books";
 import type { BookChaptersTable } from "./bookChapter";
+import type { MainDB } from "..";
 
 import { Table } from "./abstract";
 import { generateId } from "@src/util";
 
 export class BookPagesTable extends Table<BookPage> {
   tableName = "book_pages";
+  idField = "id" as const;
 
   protected schema = {
     id: "TEXT PRIMARY KEY",
@@ -17,29 +23,39 @@ export class BookPagesTable extends Table<BookPage> {
     content_length: "INTEGER NOT NULL",
     offset_start: "INTEGER NOT NULL",
     offset_end: "INTEGER NOT NULL",
-    page_transition_type:
-      "TEXT NOT NULL CHECK (page_transition_type IN ('new_chapter', 'line_break', 'space', 'intra_word_break'))",
-    created_at: "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    page_transition_type: "TEXT NOT NULL",
+    created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 
   constructor(
-    mainDb: any,
+    mainDb: MainDB,
     booksTable: BooksTable,
     bookChaptersTable: BookChaptersTable,
   ) {
     super(mainDb);
-    this.constraints.push(
-      `FOREIGN KEY (${this.fields.book_id}) REFERENCES ${booksTable.tableName}(${booksTable.fields.id}) ON DELETE CASCADE`,
+    this.addConstraint(
+      `FOREIGN KEY (${this.field("book_id")}) REFERENCES ${booksTable.tableName}(${booksTable.field("id")}) ON DELETE CASCADE`,
     );
-    this.constraints.push(
-      `FOREIGN KEY (${this.fields.chapter_id}) REFERENCES ${bookChaptersTable.tableName}(${bookChaptersTable.fields.id}) ON DELETE CASCADE`,
+    this.addConstraint(
+      `FOREIGN KEY (${this.field("chapter_id")}) REFERENCES ${bookChaptersTable.tableName}(${bookChaptersTable.field("id")}) ON DELETE CASCADE`,
     );
+    this.addConstraint(
+      `CHECK (${this.field("page_transition_type")} IN (${PAGE_TRANSITION_TYPES.map((p) => `'${p}'`).join(", ")}))`,
+    );
+    this.addIndex([this.field("book_id"), this.field("page_number")]);
   }
 
-  async insert(bookPage: BookPageCreate): Promise<BookPage> {
+  async createBookPage(bookPage: BookPageCreate): Promise<BookPage> {
     const id = generateId();
     const createdAt = new Date().toISOString();
-    const contentLength = bookPage.content.length;
+    let contentLength = bookPage.content.length;
+
+    if (
+      bookPage.page_transition_type === "space" ||
+      bookPage.page_transition_type === "line_break"
+    ) {
+      contentLength += 1;
+    }
 
     let offsetStart = 0;
 
@@ -56,7 +72,7 @@ export class BookPagesTable extends Table<BookPage> {
 
     const offsetEnd = offsetStart + contentLength - 1;
 
-    const { query, params } = this.generateInsertQuery({
+    const result = await this.insert({
       ...bookPage,
       id,
       content_length: contentLength,
@@ -65,32 +81,29 @@ export class BookPagesTable extends Table<BookPage> {
       created_at: createdAt,
     });
 
-    await this.mainDb.run(query, params);
-
-    const newBookPage = await this.getById(id);
-
-    if (!newBookPage) {
-      throw new Error("Failed to create book page");
-    }
-
-    return newBookPage;
+    return result[0];
   }
 
   async getTotalPages(bookId: string): Promise<number> {
-    const result = await this.mainDb.get<{ total_pages: number }>(
-      `SELECT COUNT(*) AS total_pages FROM ${this.tableName} WHERE book_id = ?`,
+    const result = await this.mainDb.query<{ total_pages: string }>(
+      `SELECT COUNT(*) AS total_pages FROM ${this.tableName} WHERE ${this.field("book_id")} = $1`,
       [bookId],
     );
-    return result ? result.total_pages : 0;
+
+    return result.rows?.[0]?.total_pages
+      ? parseInt(result.rows[0].total_pages, 10)
+      : 0;
   }
 
   async getByBookIdAndPageNumber(
     bookId: string,
     pageNumber: number,
   ): Promise<BookPage | undefined> {
-    return await this.mainDb.get<BookPage>(
-      `SELECT * FROM ${this.tableName} WHERE ${this.fields.book_id} = ? AND ${this.fields.page_number} = ?`,
+    const result = await this.mainDb.query<BookPage>(
+      `SELECT * FROM ${this.tableName} WHERE ${this.field("book_id")} = $1 AND ${this.field("page_number")} = $2 LIMIT 1`,
       [bookId, pageNumber],
     );
+
+    return result.rows?.[0];
   }
 }

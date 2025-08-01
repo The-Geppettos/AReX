@@ -63,7 +63,7 @@ export class ChromaDB {
           success = true;
         } catch (error) {
           console.error("Failed to initialize ChromaDB collections:", error);
-          console.log(`Retrying in ${RETRY_INTERVAL} ms...`);
+          console.error(`Retrying in ${RETRY_INTERVAL} ms...`);
 
           await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
         }

@@ -41,6 +41,6 @@ export class BookController {
   }
 
   async createBook(title: string, author: string): Promise<Book> {
-    return await this.booksTable.insert({ title, author });
+    return await this.booksTable.createBook({ title, author });
   }
 }

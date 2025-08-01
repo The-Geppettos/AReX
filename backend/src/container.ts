@@ -26,6 +26,14 @@ dotenv.config({
 
 const main_server_port = process.env.BACKEND_PORT || "3001";
 
+const postgres_host = process.env.POSTGRES_HOST || "localhost";
+const postgres_port = process.env.POSTGRES_PORT
+  ? parseInt(process.env.POSTGRES_PORT, 10)
+  : 5432;
+const postgres_main_db = process.env.POSTGRES_MAIN_DB || "main";
+const postgres_user = process.env.POSTGRES_USER || "postgres";
+const postgres_password = process.env.POSTGRES_PASSWORD || "";
+
 const chromadb_host = process.env.CHROMA_DB_HOST || "localhost";
 const chromadb_port = process.env.CHROMA_DB_PORT
   ? parseInt(process.env.CHROMA_DB_PORT, 10)
@@ -41,7 +49,13 @@ const rbmq_port = process.env.RABBITMQ_PORT || "5672";
 
 const mainServer = new MainServer(main_server_port);
 
-const mainDb = new MainDB();
+const mainDb = new MainDB(
+  postgres_host,
+  postgres_port,
+  postgres_user,
+  postgres_password,
+  postgres_main_db,
+);
 
 const booksTable = new BooksTable(mainDb);
 const bookChaptersTable = new BookChaptersTable(mainDb, booksTable);

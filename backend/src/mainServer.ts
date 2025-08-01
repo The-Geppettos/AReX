@@ -30,20 +30,23 @@ export class MainServer {
   }
 
   initialize() {
-    if (this.server) {
-      throw new Error("Server is already running");
-    }
+    return new Promise<void>((resolve) => {
+      if (this.server) {
+        throw new Error("Server is already running");
+      }
 
-    if (this.stopTriggered) {
-      return;
-    }
+      if (this.stopTriggered) {
+        return;
+      }
 
-    this.server = this.express.listen(this.port, () => {
-      console.log(`Server is running on port ${this.port}`);
-    });
+      this.server = this.express.listen(this.port, () => {
+        console.log(`Server is running on port ${this.port}`);
+        resolve();
+      });
 
-    this.server.on("error", (err) => {
-      console.error("Server error:", err);
+      this.server.on("error", (err) => {
+        console.error("Server error:", err);
+      });
     });
   }
 

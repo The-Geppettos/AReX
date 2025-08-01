@@ -187,24 +187,26 @@ const main = async () => {
     await container.mainDb.close();
     await container.chromaDb.close();
 
+    console.log("All components closed successfully");
     process.exit(0);
   };
 
   process.on("SIGINT", gracefulShutdown);
   process.on("SIGTERM", gracefulShutdown);
+  process.on("SIGUSR2", gracefulShutdown);
   process.on("uncaughtException", (error) => {
     console.error("Uncaught Exception:", error);
     gracefulShutdown();
   });
 
-  console.log("Initializing Clients...");
+  console.log("Initializing components...");
 
   await container.mainDb.initialize();
   await container.chromaDb.initialize();
   await container.rabbitMQ.initialize();
-  container.mainServer.initialize();
+  await container.mainServer.initialize();
 
-  console.log("Clients initialized successfully");
+  console.log("All components initialized successfully");
 };
 
 main();

@@ -11,9 +11,6 @@
 /build
 /dist
 
-# database
-*.db
-
 # logs
 npm-debug.log*
 yarn-debug.log*

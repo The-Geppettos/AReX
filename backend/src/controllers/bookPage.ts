@@ -52,7 +52,7 @@ export class BookPageController {
       | "space"
       | "intra_word_break",
   ): Promise<BookPage> {
-    const bookPage = await this.bookPagesTable.insert({
+    const bookPage = await this.bookPagesTable.createBookPage({
       book_id: bookId,
       chapter_id: chapterId,
       page_number: pageNumber,
@@ -87,7 +87,11 @@ export class BookPageController {
       }
     }
 
-    await this.contentAnalysisQueue.sendMessage(bookPage.id, content, prevContent);
+    await this.contentAnalysisQueue.sendMessage(
+      bookPage.id,
+      content,
+      prevContent,
+    );
 
     return bookPage;
   }

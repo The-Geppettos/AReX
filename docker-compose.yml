@@ -43,19 +43,19 @@ services:
     depends_on:
       - rabbitmq
 
-  # sql:
-  #   image: postgres:15
-  #   container_name: sql
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #     POSTGRES_DB: postgres
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  #
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_MAIN_DB}"
+      PGPORT: "${POSTGRES_PORT}"
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -67,7 +67,7 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
       RABBITMQ_NODE_PORT: "${RABBITMQ_PORT}"
     volumes:
-      - ./rabbitmq/rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq_data:/var/lib/rabbitmq
 
   chromadb:
     image: chromadb/chroma:1.0.16.dev77
@@ -88,4 +88,4 @@ services:
         "chromadb",
       ]
     volumes:
-      - ./chromadb/chroma_data:/app/chromadb/chroma_data
+      - ./chroma_data:/app/chromadb/chroma_data

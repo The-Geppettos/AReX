@@ -1,6 +1,0 @@
-.venv
-chroma_data/
-
-__pycache__/
-*.py[cod]
-*$py.class

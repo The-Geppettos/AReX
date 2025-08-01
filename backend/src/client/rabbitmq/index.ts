@@ -8,7 +8,7 @@ export class RabbitMQ {
     Promise.resolve(null);
   private channelPromise: Promise<amqp.Channel | null> = Promise.resolve(null);
 
-  private disconnectTriggered: boolean = false;
+  private closeTriggered: boolean = false;
 
   private queues: Queue[] = [];
   private consumers: [
@@ -65,14 +65,14 @@ export class RabbitMQ {
   private async resolveChannelModel(
     resolve: (channelModel: amqp.ChannelModel | null) => void,
   ) {
-    if (this.disconnectTriggered) {
+    if (this.closeTriggered) {
       resolve(null);
     }
 
     try {
       const connection = await amqp.connect(`amqp://${this.host}:${this.port}`);
 
-      if (this.disconnectTriggered) {
+      if (this.closeTriggered) {
         try {
           await connection.close();
           resolve(null);
@@ -84,7 +84,7 @@ export class RabbitMQ {
       }
 
       connection.on("error", (err) => {
-        if (this.disconnectTriggered) {
+        if (this.closeTriggered) {
           return;
         }
         console.error("Connection error occurred. Reconnecting...", err);
@@ -96,7 +96,7 @@ export class RabbitMQ {
       });
 
       connection.on("close", () => {
-        if (this.disconnectTriggered) {
+        if (this.closeTriggered) {
           return;
         }
         console.error("Connection closed unexpectedly. Reconnecting...");
@@ -111,7 +111,7 @@ export class RabbitMQ {
 
       console.log("RabbitMQ connection established successfully.");
     } catch (err) {
-      if (this.disconnectTriggered) {
+      if (this.closeTriggered) {
         resolve(null);
         return;
       }
@@ -130,7 +130,7 @@ export class RabbitMQ {
   private async resolveChannel(
     resolve: (channel: amqp.Channel | null) => void,
   ) {
-    if (this.disconnectTriggered) {
+    if (this.closeTriggered) {
       resolve(null);
       return;
     }
@@ -155,7 +155,7 @@ export class RabbitMQ {
         console.log(`Consumer for queue ${queueName} registered successfully.`);
       }
 
-      if (this.disconnectTriggered) {
+      if (this.closeTriggered) {
         try {
           await channel.close();
           resolve(null);
@@ -167,7 +167,7 @@ export class RabbitMQ {
       }
 
       channel.on("error", () => {
-        if (this.disconnectTriggered) {
+        if (this.closeTriggered) {
           return;
         }
         console.error("Channel error occurred. Reconnecting...");
@@ -176,7 +176,7 @@ export class RabbitMQ {
         });
       });
       channel.on("close", () => {
-        if (this.disconnectTriggered) {
+        if (this.closeTriggered) {
           return;
         }
         console.error("Channel closed unexpectedly. Reconnecting...");
@@ -189,7 +189,7 @@ export class RabbitMQ {
 
       console.log("Channel created successfully.");
     } catch (err) {
-      if (this.disconnectTriggered) {
+      if (this.closeTriggered) {
         resolve(null);
         return;
       }
@@ -221,7 +221,7 @@ export class RabbitMQ {
 
   async close(): Promise<void> {
     console.log("Disconnecting from RabbitMQ...");
-    this.disconnectTriggered = true;
+    this.closeTriggered = true;
 
     const channel = await this.channelPromise;
 

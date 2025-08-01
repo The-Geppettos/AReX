@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 
 proj_dir = os.path.join(os.path.dirname(__file__))
 env_path = Path(os.path.join(proj_dir, "../.env")).resolve()
-nltk_data_path = os.path.join(proj_dir, "nltk_data")
 
 load_dotenv(env_path)
 

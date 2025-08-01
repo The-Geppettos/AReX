@@ -1,3 +1,0 @@
-source ../.env
-
-chroma run --path ./chroma_data --port ${CHROMA_DB_PORT}
