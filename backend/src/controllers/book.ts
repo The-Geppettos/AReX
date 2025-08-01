@@ -1,6 +1,6 @@
 import type { Book, BookDetail, BookList } from "@shared/types";
-import type { BooksTable } from "@src/dbclient/maindb/tables/books";
-import type { BookPagesTable } from "@src/dbclient/maindb/tables/bookPage";
+import type { BooksTable } from "@src/client/maindb/tables/books";
+import type { BookPagesTable } from "@src/client/maindb/tables/bookPage";
 
 export class BookController {
   private booksTable: BooksTable;
@@ -41,6 +41,6 @@ export class BookController {
   }
 
   async createBook(title: string, author: string): Promise<Book> {
-    return await this.booksTable.insert({ title, author });
+    return await this.booksTable.createBook({ title, author });
   }
 }

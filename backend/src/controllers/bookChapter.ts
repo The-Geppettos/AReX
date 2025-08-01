@@ -1,5 +1,5 @@
 import type { BookChapter } from "@shared/types";
-import type { BookChaptersTable } from "@src/dbclient/maindb/tables/bookChapter";
+import type { BookChaptersTable } from "@src/client/maindb/tables/bookChapter";
 
 export class BookChapterController {
   private bookChaptersTable: BookChaptersTable;
@@ -13,7 +13,7 @@ export class BookChapterController {
     chapterNumber: number,
     title: string,
   ): Promise<BookChapter> {
-    return this.bookChaptersTable.insert({
+    return this.bookChaptersTable.createChapter({
       book_id: bookId,
       chapter_number: chapterNumber,
       title,

@@ -2,10 +2,12 @@ export interface Book {
   id: string;
   title: string;
   author: string;
-  status: "draft" | "published";
+  status: (typeof BOOK_STATUS)[number];
   created_at: string;
   updated_at: string;
 }
+
+export const BOOK_STATUS = ["draft", "published"] as const;
 
 export interface BookCreate extends Pick<Book, "title" | "author"> {}
 
@@ -40,13 +42,16 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
-  page_transition_type:
-    | "new_chapter"
-    | "line_break"
-    | "space"
-    | "intra_word_break";
+  page_transition_type: (typeof PAGE_TRANSITION_TYPES)[number];
   created_at: string;
 }
+
+export const PAGE_TRANSITION_TYPES = [
+  "new_chapter",
+  "line_break",
+  "space",
+  "intra_word_break",
+] as const;
 
 export interface BookPageCreate
   extends Pick<
