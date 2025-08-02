@@ -12,10 +12,13 @@ import {
   FormHelperText,
   FormLabel,
   IconButton,
+  InputLabel,
   List,
   ListItem,
   ListItemText,
+  MenuItem,
   Paper,
+  Select,
   TextField,
   Typography,
 } from "@mui/material";
@@ -28,7 +31,12 @@ import {
 } from "@mui/icons-material";
 import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "../../../bookreader/const";
 import ExtAPI from "../../../api/extApi";
-import type { BookPage } from "@shared/types";
+import {
+  LANGUAGE_LABELS,
+  LANGUAGES,
+  type BookPage,
+  type Language,
+} from "@shared/types";
 import { indentFirstLine, TextProcessor } from "../../../lib";
 
 type BookPagenateResponse = {
@@ -52,29 +60,29 @@ const BOOK_FILE_EXT_MAP: Record<BookFileExt, string> = {
   txt: "text/plain",
 };
 
-type InputTextState = {
-  value: string;
+type InputState<T> = {
+  value: T;
   error: string | null;
 };
 
 const RegisterNewBook = () => {
-  const [bookTitle, setBookTitle] = useState<InputTextState>({
+  const [bookTitle, setBookTitle] = useState<InputState<string>>({
     value: "",
     error: null,
   });
-  const [author, setAuthor] = useState<InputTextState>({
+  const [author, setAuthor] = useState<InputState<string>>({
     value: "",
     error: null,
   });
-  const [chapters, setChapters] = useState<{
-    value: {
-      title: InputTextState;
-      file: File;
-      length: number;
-      index: number;
-    }[];
-    error: string | null;
-  }>({ value: [], error: null });
+  const [language, setLanguage] = useState<InputState<Language>>({
+    value: LANGUAGES[0],
+    error: null,
+  });
+  const [chapters, setChapters] = useState<
+    InputState<
+      { title: InputState<string>; file: File; length: number; index: number }[]
+    >
+  >({ value: [], error: null });
   const [bookPaginateRequest, setBookPaginateRequest] =
     useState<BookPagenateRequest | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -89,6 +97,13 @@ const RegisterNewBook = () => {
     }
     if (!author.value.trim()) {
       setAuthor((prev) => ({ ...prev, error: "Author name is required." }));
+      valid = false;
+    }
+    if (!LANGUAGES.includes(language.value)) {
+      setLanguage((prev) => ({
+        ...prev,
+        error: `Language must be one of ${LANGUAGES.join(", ")}`,
+      }));
       valid = false;
     }
     if (chapters.value.length === 0) {
@@ -158,6 +173,7 @@ const RegisterNewBook = () => {
       const createdBook = await ExtAPI.createBook({
         title: bookTitle.value.trim(),
         author: author.value.trim(),
+        language: language.value,
       });
 
       let pageNumber = 1;
@@ -318,6 +334,23 @@ const RegisterNewBook = () => {
             onChange={(e) => setAuthor({ value: e.target.value, error: null })}
             disabled={isUploading}
           />
+
+          <FormControl fullWidth>
+            <InputLabel>Language</InputLabel>
+            <Select
+              value={language.value}
+              label="Language"
+              onChange={(e) =>
+                setLanguage({ value: e.target.value as Language, error: null })
+              }
+            >
+              {LANGUAGES.map((lang) => (
+                <MenuItem key={lang} value={lang}>
+                  {LANGUAGE_LABELS[lang]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <Divider sx={{ mt: 3 }} />
 

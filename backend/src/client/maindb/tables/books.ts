@@ -14,6 +14,7 @@ export class BooksTable extends Table<Book> {
     title: "TEXT NOT NULL",
     author: "TEXT NOT NULL",
     status: "TEXT NOT NULL",
+    language: "TEXT NOT NULL",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };

@@ -23,6 +23,12 @@ const backendProtocol = process.env.BACKEND_PROTOCOL || "http";
 
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@src": resolve(__dirname, "src"),
+      "@shared": resolve(__dirname, "../shared"),
+    },
+  },
   plugins: [
     react(),
     {

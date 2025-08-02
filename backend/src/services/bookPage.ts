@@ -1,21 +1,25 @@
 import type { BookPagesTable } from "@src/client/maindb/tables/bookPage";
 import type { BookChaptersTable } from "@src/client/maindb/tables/bookChapter";
 import type { BookPage, BookPageDetail } from "@shared/types";
-import type { ContentAnalysisQueue } from "@src/client/rabbitmq/queues/contentAnalysis";
+import type { NLPPreProcessProducer } from "@src/client/rabbitmq/queues/nlpPreProcess";
+import type { BooksTable } from "@src/client/maindb/tables/books";
 
-export class BookPageController {
+export class BookPageService {
   private bookPagesTable: BookPagesTable;
+  private booksTable: BooksTable;
   private bookChaptersTable: BookChaptersTable;
-  private contentAnalysisQueue: ContentAnalysisQueue;
+  private nlpPreProcessProducer: NLPPreProcessProducer;
 
   constructor(
     bookPagesTable: BookPagesTable,
+    booksTable: BooksTable,
     bookChaptersTable: BookChaptersTable,
-    contentAnalysisQueue: ContentAnalysisQueue,
+    nlpPreProcessProducer: NLPPreProcessProducer,
   ) {
     this.bookPagesTable = bookPagesTable;
+    this.booksTable = booksTable;
     this.bookChaptersTable = bookChaptersTable;
-    this.contentAnalysisQueue = contentAnalysisQueue;
+    this.nlpPreProcessProducer = nlpPreProcessProducer;
   }
 
   async getBookPage(
@@ -87,10 +91,19 @@ export class BookPageController {
       }
     }
 
-    await this.contentAnalysisQueue.sendMessage(
-      bookPage.id,
-      content,
-      prevContent,
+    const book = await this.booksTable.getById(bookId);
+    if (!book) {
+      throw new Error("Book not found");
+    }
+
+    await this.nlpPreProcessProducer.sendMessage(
+      {
+        book_page_id: bookPage.id,
+        content,
+        prev_content: prevContent,
+        language: book.language,
+      },
+      { persistent: true },
     );
 
     return bookPage;

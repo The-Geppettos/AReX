@@ -12,11 +12,14 @@ import { ChromaDB } from "@src/client/chromadb";
 
 import { BookContentVectorCollection } from "@src/client/chromadb/vectorCollections/bookContent";
 
-import { BookController } from "@src/controllers/book";
-import { BookChapterController } from "@src/controllers/bookChapter";
-import { BookPageController } from "@src/controllers/bookPage";
+import { BookService } from "@src/services/book";
+import { BookChapterService } from "@src/services/bookChapter";
+import { BookPageService } from "@src/services/bookPage";
 import { RabbitMQ } from "@src/client/rabbitmq";
-import { ContentAnalysisQueue } from "./client/rabbitmq/queues/contentAnalysis";
+import {
+  NLPPreProcessConsumer,
+  NLPPreProcessProducer,
+} from "./client/rabbitmq/queues/nlpPreProcess";
 
 dotenv.config({
   path: "../.env",
@@ -76,14 +79,16 @@ const bookContentVectorCollection = new BookContentVectorCollection(chromaDb);
 
 const rabbitMQ = new RabbitMQ(rbmq_host, rbmq_port);
 
-const contentAnalysisQueue = new ContentAnalysisQueue(rabbitMQ);
+const nlpPreProcessProducer = new NLPPreProcessProducer(rabbitMQ);
+const nlpPreProcessConsumer = new NLPPreProcessConsumer(rabbitMQ);
 
-const bookController = new BookController(booksTable, bookPagesTable);
-const bookChapterController = new BookChapterController(bookChaptersTable);
-const bookPageController = new BookPageController(
+const bookService = new BookService(booksTable, bookPagesTable);
+const bookChapterService = new BookChapterService(bookChaptersTable);
+const bookPageService = new BookPageService(
   bookPagesTable,
+  booksTable,
   bookChaptersTable,
-  contentAnalysisQueue,
+  nlpPreProcessProducer,
 );
 
 export default {
@@ -91,7 +96,8 @@ export default {
   mainDb,
   chromaDb,
   rabbitMQ,
-  bookController,
-  bookChapterController,
-  bookPageController,
+  nlpPreProcessConsumer,
+  bookService,
+  bookChapterService,
+  bookPageService,
 };

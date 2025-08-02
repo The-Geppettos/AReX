@@ -1,4 +1,5 @@
 import pika
+from pika.adapters.blocking_connection import BlockingChannel
 
 import time
 import signal
@@ -8,7 +9,8 @@ from env import rbmq_host, rbmq_port
 
 RETRY_INTERVAL = 5  # seconds
 
-queue_name = "content-analysis"
+consumer_name = "nlp-pre-process-req"
+producer_name = "nlp-pre-process-res"
 
 connection = None
 channel = None
@@ -51,20 +53,32 @@ while not stop_triggered:
         channel = connection.channel()
         print("Channel created.")
 
-        print(f"Declaring queue '{queue_name}'...")
-        channel.queue_declare(queue=queue_name, durable=True)
-        print(f"Queue '{queue_name}' declared.")
+        print(f"Declaring consumer queue '{consumer_name}'...")
+        channel.queue_declare(queue=consumer_name, durable=True)
+        print(f"Consumer queue '{consumer_name}' declared.")
 
-        def callback(ch, method, properties, body):
+        print(f"Declaring producer queue '{producer_name}'...")
+        channel.queue_declare(queue=producer_name, durable=True)
+        print(f"Producer queue '{producer_name}' declared.")
+
+        def callback(ch: BlockingChannel, method, properties, body):
             print(f"Received")
             # Here you can process the message
+            ch.basic_publish(
+                exchange='',
+                routing_key=producer_name,
+                body="Testing",
+                properties=pika.BasicProperties(
+                    delivery_mode=2,  # Make message persistent
+                )
+            )
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
         channel.basic_consume(
-            queue=queue_name, on_message_callback=callback, auto_ack=False
+            queue=consumer_name, on_message_callback=callback, auto_ack=False
         )
 
-        print(f"Waiting for messages in queue '{queue_name}'...")
+        print(f"Waiting for messages in queue '{consumer_name}'...")
         channel.start_consuming()
 
     except Exception as error:

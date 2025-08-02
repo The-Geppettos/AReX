@@ -1,8 +1,8 @@
-import type { Book, BookDetail, BookList } from "@shared/types";
+import type { Book, BookDetail, BookList, Language } from "@shared/types";
 import type { BooksTable } from "@src/client/maindb/tables/books";
 import type { BookPagesTable } from "@src/client/maindb/tables/bookPage";
 
-export class BookController {
+export class BookService {
   private booksTable: BooksTable;
   private bookPagesTable: BookPagesTable;
 
@@ -40,7 +40,11 @@ export class BookController {
     };
   }
 
-  async createBook(title: string, author: string): Promise<Book> {
-    return await this.booksTable.createBook({ title, author });
+  async createBook(
+    title: string,
+    author: string,
+    language: Language,
+  ): Promise<Book> {
+    return await this.booksTable.createBook({ title, author, language });
   }
 }

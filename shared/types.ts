@@ -1,15 +1,35 @@
+export const LANGUAGES = ["ko", "en"] as const;
+
+export const BOOK_STATUS = ["draft", "published"] as const;
+
+export const PAGE_TRANSITION_TYPES = [
+  "new_chapter",
+  "line_break",
+  "space",
+  "intra_word_break",
+] as const;
+
+export const LANGUAGE_LABELS: Record<Language, string> = {
+  ko: "한국어",
+  en: "English",
+};
+
+export type Language = (typeof LANGUAGES)[number];
+export type BookStatus = (typeof BOOK_STATUS)[number];
+export type PageTransitionType = (typeof PAGE_TRANSITION_TYPES)[number];
+
 export interface Book {
   id: string;
   title: string;
   author: string;
-  status: (typeof BOOK_STATUS)[number];
+  status: BookStatus;
+  language: Language;
   created_at: string;
   updated_at: string;
 }
 
-export const BOOK_STATUS = ["draft", "published"] as const;
-
-export interface BookCreate extends Pick<Book, "title" | "author"> {}
+export interface BookCreate
+  extends Pick<Book, "title" | "author" | "language"> {}
 
 export interface BookDetail extends Book {
   total_pages: number;
@@ -42,16 +62,9 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
-  page_transition_type: (typeof PAGE_TRANSITION_TYPES)[number];
+  page_transition_type: PageTransitionType;
   created_at: string;
 }
-
-export const PAGE_TRANSITION_TYPES = [
-  "new_chapter",
-  "line_break",
-  "space",
-  "intra_word_break",
-] as const;
 
 export interface BookPageCreate
   extends Pick<
@@ -67,6 +80,11 @@ export interface BookPageDetail extends BookPage {
   chapter_title: string | null;
 }
 
-export interface ContentAnalysis {
-  characters: string[];
+export interface NLPPreProcessReq {
+  book_page_id: string;
+  content: string;
+  prev_content: string | null;
+  language: Language;
 }
+
+export interface NLPPreProcessRes {}
