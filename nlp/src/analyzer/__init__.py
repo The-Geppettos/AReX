@@ -41,15 +41,24 @@ def analyze(content: str, prev_content: str | None, language: str):
 
     combined_content = prev_content + content if prev_content is not None else content
 
-    sb = analyzer.get_sentence_boundaries(combined_content)
+    current_content_start_offset = len(prev_content) if prev_content is not None else 0
 
     sentence_boundaries = []
 
-    offset = len(prev_content) if prev_content is not None else 0
+    offset = 0
+    for paragraph in combined_content.split("\n"):
+        sb = analyzer.get_sentence_boundaries(paragraph)
 
-    for start, end in sb:
-        if start >= offset:
-            sentence_boundaries.append([start - offset, end - offset])
+        for s, e in sb:
+            start = s + offset
+            end = e + offset
+            if start >= current_content_start_offset:
+                sentence_boundaries.append([start - current_content_start_offset, end - current_content_start_offset])
+            elif end > current_content_start_offset:
+                sentence_boundaries.append([start - current_content_start_offset, end - current_content_start_offset])
+
+
+        offset += len(paragraph) + 1
 
     return {
         "sentence_boundaries": sentence_boundaries

@@ -113,22 +113,113 @@ export class BookPageService {
     return bookPage;
   }
 
+  private linkPrevSentenceBoundaries(
+    prevSentenceBoundaries: Exclude<BookPage["sentence_boundaries"], null>,
+    prevContentLength: number,
+    nextSentenceBoundaries: Exclude<BookPage["sentence_boundaries"], null>,
+  ) {
+    let linkIndex = prevSentenceBoundaries.findIndex(
+      ([start, _]) =>
+        start === prevContentLength + nextSentenceBoundaries[0][0],
+    );
+
+    if (linkIndex === -1) {
+      const newPrevSentenceBoundaries = [
+        ...prevSentenceBoundaries.slice(0, -1),
+        [
+          prevSentenceBoundaries[prevSentenceBoundaries.length - 1][0],
+          nextSentenceBoundaries[0][1] + prevContentLength,
+        ] as [number, number],
+      ];
+
+      const newNextSentenceBoundaries = [
+        [
+          prevSentenceBoundaries[prevSentenceBoundaries.length - 1][0] -
+            prevContentLength,
+          nextSentenceBoundaries[0][1],
+        ] as [number, number],
+        ...nextSentenceBoundaries.slice(1),
+      ];
+
+      return [newPrevSentenceBoundaries, newNextSentenceBoundaries];
+    }
+
+    const newPrevSentenceBoundaries = [
+      ...prevSentenceBoundaries.slice(0, linkIndex),
+      [
+        prevSentenceBoundaries[linkIndex][0],
+        nextSentenceBoundaries[0][1] + prevContentLength,
+      ] as [number, number],
+    ];
+
+    return [newPrevSentenceBoundaries, nextSentenceBoundaries];
+  }
+
   async updatePreProcessedData(
     bookPageId: string,
     sentenceBoundaries: Exclude<BookPage["sentence_boundaries"], null>,
-  ): Promise<BookPage> {
-    const updatedBookPage = await this.bookPagesTable.updatePreProcessedData(
-      bookPageId,
-      JSON.stringify(sentenceBoundaries),
-    );
+  ) {
+    const bookPage = await this.bookPagesTable.getById(bookPageId);
 
-    if (!updatedBookPage) {
+    if (!bookPage) {
       throw new Error("Book page not found");
     }
 
-    return {
-      ...updatedBookPage,
-      sentence_boundaries: JSON.parse(updatedBookPage.sentence_boundaries),
-    };
+    if (bookPage.page_number > 1 && sentenceBoundaries[0][0] < 0) {
+      const prevPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+        bookPage.book_id,
+        bookPage.page_number - 1,
+      );
+
+      if (prevPage && prevPage.sentence_boundaries !== null) {
+        const prevSentenceBoundaries = JSON.parse(
+          prevPage.sentence_boundaries,
+        ) as Exclude<BookPage["sentence_boundaries"], null>;
+
+        const [newPrevSentenceBoundaries, newSentenceBoundaries] =
+          this.linkPrevSentenceBoundaries(
+            prevSentenceBoundaries,
+            prevPage.content_length,
+            sentenceBoundaries,
+          );
+        sentenceBoundaries = newSentenceBoundaries;
+
+        await this.bookPagesTable.updatePreProcessedData(
+          prevPage.id,
+          JSON.stringify(newPrevSentenceBoundaries),
+        );
+      }
+    }
+
+    const nextPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+      bookPage.book_id,
+      bookPage.page_number + 1,
+    );
+
+    if (nextPage && nextPage.sentence_boundaries !== null) {
+      const nextSentenceBoundaries = JSON.parse(
+        nextPage.sentence_boundaries,
+      ) as Exclude<BookPage["sentence_boundaries"], null>;
+
+      if (nextSentenceBoundaries[nextSentenceBoundaries.length - 1][0] < 0) {
+        const [newSentenceBoundaries, newNextSentenceBoundaries] =
+          this.linkPrevSentenceBoundaries(
+            sentenceBoundaries,
+            bookPage.content_length,
+            nextSentenceBoundaries,
+          );
+        sentenceBoundaries = newSentenceBoundaries;
+
+        await this.bookPagesTable.updatePreProcessedData(
+          nextPage.id,
+          JSON.stringify(newNextSentenceBoundaries),
+        );
+      }
+    }
+
+    await this.bookPagesTable.updatePreProcessedData(
+      bookPageId,
+      JSON.stringify(sentenceBoundaries),
+    );
   }
 }
