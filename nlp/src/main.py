@@ -4,8 +4,10 @@ from pika.adapters.blocking_connection import BlockingChannel
 import time
 import signal
 import sys
+import json
 
 from env import rbmq_host, rbmq_port
+from .analyzer import analyze
 
 RETRY_INTERVAL = 5  # seconds
 
@@ -62,12 +64,34 @@ while not stop_triggered:
         print(f"Producer queue '{producer_name}' declared.")
 
         def callback(ch: BlockingChannel, method, properties, body):
-            print(f"Received")
-            # Here you can process the message
+            print("Message Received. Processing...")
+            inputStr = body.decode('utf-8')
+            inputDict = json.loads(inputStr)
+            book_page_id = inputDict.get("book_page_id", None)
+
+            try:
+                res = {
+                    "success": True,
+                    "result": analyze(
+                        content=inputDict.get("content", ""),
+                        prev_content=inputDict.get("prev_content"),
+                        language=inputDict.get("language", "en")
+                    )
+                }
+            except Exception as e:
+                print(f"Error analyzing content: {e}")
+                res = {"success": False}
+
+            res["book_page_id"] = book_page_id
+
+            res = json.dumps(res, ensure_ascii=False).encode('utf-8')
+
+            print("Publishing response to producer queue...")
+
             ch.basic_publish(
                 exchange='',
                 routing_key=producer_name,
-                body="Testing",
+                body=res,
                 properties=pika.BasicProperties(
                     delivery_mode=2,  # Make message persistent
                 )

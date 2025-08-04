@@ -1,5 +1,6 @@
 import {
   LANGUAGES,
+  NLPPreProcessRes,
   PAGE_TRANSITION_TYPES,
   type BookChapterCreate,
   type BookCreate,
@@ -184,9 +185,52 @@ const main = async () => {
     }
   });
 
-  container.nlpPreProcessConsumer.consume((message, acknowledge) => {
-    // TODO: Implement NLP pre-processing logic
-    acknowledge();
+  container.nlpPreProcessConsumer.consume(async (message, acknowledge) => {
+    try {
+      const nlpPreProcessRes = JSON.parse(
+        message.content.toString(),
+      ) as NLPPreProcessRes;
+
+      if (!nlpPreProcessRes.success) {
+        throw new Error("NLP pre-processing failed");
+      }
+
+      if (!nlpPreProcessRes.book_page_id) {
+        throw new Error("Invalid message format: book_page_id is required");
+      }
+
+      if (!Array.isArray(nlpPreProcessRes.result.sentence_boundaries)) {
+        throw new Error(
+          "Invalid message format: sentence_boundaries must be an array",
+        );
+      }
+
+      for (const boundary of nlpPreProcessRes.result.sentence_boundaries) {
+        if (
+          !Array.isArray(boundary) ||
+          boundary.length !== 2 ||
+          typeof boundary[0] !== "number" ||
+          typeof boundary[1] !== "number"
+        ) {
+          throw new Error(
+            "Invalid sentence boundary format: must be an array of two numbers",
+          );
+        }
+      }
+
+      await container.bookPageService.updatePreProcessedData(
+        nlpPreProcessRes.book_page_id,
+        nlpPreProcessRes.result.sentence_boundaries,
+      );
+    } catch (error) {
+      console.error("Error processing message:", error);
+    }
+
+    try {
+      await acknowledge();
+    } catch (error) {
+      console.error("Error acknowledging message:", error);
+    }
   });
 
   const gracefulShutdown = async (signal?: NodeJS.Signals) => {

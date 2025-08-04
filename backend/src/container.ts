@@ -1,25 +1,25 @@
 import dotenv from "dotenv";
 
-import { MainServer } from "@src/mainServer";
+import { MainServer } from "@src/component/mainserver";
 
-import { MainDB } from "@src/client/maindb";
+import { MainDB } from "@src/component/maindb";
 
-import { BooksTable } from "@src/client/maindb/tables/books";
-import { BookChaptersTable } from "@src/client/maindb/tables/bookChapter";
-import { BookPagesTable } from "@src/client/maindb/tables/bookPage";
+import { BooksTable } from "@src/component/maindb/tables/books";
+import { BookChaptersTable } from "@src/component/maindb/tables/bookChapter";
+import { BookPagesTable } from "@src/component/maindb/tables/bookPage";
 
-import { ChromaDB } from "@src/client/chromadb";
+import { ChromaDB } from "@src/component/chromadb";
 
-import { BookContentVectorCollection } from "@src/client/chromadb/vectorCollections/bookContent";
+import { BookContentVectorCollection } from "@src/component/chromadb/vectorCollections/bookContent";
 
 import { BookService } from "@src/services/book";
 import { BookChapterService } from "@src/services/bookChapter";
 import { BookPageService } from "@src/services/bookPage";
-import { RabbitMQ } from "@src/client/rabbitmq";
+import { RabbitMQ } from "@src/component/rabbitmq";
 import {
   NLPPreProcessConsumer,
   NLPPreProcessProducer,
-} from "./client/rabbitmq/queues/nlpPreProcess";
+} from "@src/component/rabbitmq/queues/nlpPreProcess";
 
 dotenv.config({
   path: "../.env",

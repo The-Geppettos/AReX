@@ -1,6 +1,6 @@
 import {
   PAGE_TRANSITION_TYPES,
-  type BookPage,
+  type BookPageSchema,
   type BookPageCreate,
 } from "@shared/types";
 import type { BooksTable } from "./books";
@@ -10,7 +10,7 @@ import type { MainDB } from "..";
 import { Table } from "./abstract";
 import { generateId } from "@src/util";
 
-export class BookPagesTable extends Table<BookPage> {
+export class BookPagesTable extends Table<BookPageSchema> {
   tableName = "book_pages";
   idField = "id" as const;
 
@@ -24,7 +24,9 @@ export class BookPagesTable extends Table<BookPage> {
     offset_start: "INTEGER NOT NULL",
     offset_end: "INTEGER NOT NULL",
     page_transition_type: "TEXT NOT NULL",
+    sentence_boundaries: "TEXT",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 
   constructor(
@@ -45,9 +47,12 @@ export class BookPagesTable extends Table<BookPage> {
     this.addIndex([this.field("book_id"), this.field("page_number")]);
   }
 
-  async createBookPage(bookPage: BookPageCreate): Promise<BookPage> {
+  async createBookPage(
+    bookPage: BookPageCreate,
+  ): Promise<BookPageSchema<null>> {
     const id = generateId();
     const createdAt = new Date().toISOString();
+    const updatedAt = createdAt;
     let contentLength = bookPage.content.length;
 
     if (
@@ -78,10 +83,12 @@ export class BookPagesTable extends Table<BookPage> {
       content_length: contentLength,
       offset_start: offsetStart,
       offset_end: offsetEnd,
+      sentence_boundaries: null,
       created_at: createdAt,
+      updated_at: updatedAt,
     });
 
-    return result[0];
+    return result[0] as BookPageSchema<null>;
   }
 
   async getTotalPages(bookId: string): Promise<number> {
@@ -98,12 +105,32 @@ export class BookPagesTable extends Table<BookPage> {
   async getByBookIdAndPageNumber(
     bookId: string,
     pageNumber: number,
-  ): Promise<BookPage | undefined> {
-    const result = await this.mainDb.query<BookPage>(
+  ): Promise<BookPageSchema | undefined> {
+    const result = await this.mainDb.query<BookPageSchema>(
       `SELECT * FROM ${this.tableName} WHERE ${this.field("book_id")} = $1 AND ${this.field("page_number")} = $2 LIMIT 1`,
       [bookId, pageNumber],
     );
 
     return result.rows?.[0];
+  }
+
+  async updatePreProcessedData(
+    bookPageId: string,
+    sentenceBoundaries: Exclude<BookPageSchema["sentence_boundaries"], null>,
+  ): Promise<BookPageSchema<string>> {
+    const updatedAt = new Date().toISOString();
+    const result = await this.mainDb.query<BookPageSchema<string>>(
+      `UPDATE ${this.tableName}
+       SET ${this.field("sentence_boundaries")} = $1, ${this.field("updated_at")} = $2
+       WHERE ${this.field("id")} = $3
+       RETURNING *`,
+      [sentenceBoundaries, updatedAt, bookPageId],
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Failed to update book page with id ${bookPageId}`);
+    }
+
+    return result.rows[0];
   }
 }

@@ -29,3 +29,14 @@ if is_dev:
     subprocess.run(["pip", "install", "-r", str(dev_requirements_path)], check=True)
 
     print("Development requirements installed successfully.")
+
+# Download NLTK data
+
+from env import nltk_data_path
+import nltk
+
+print("Downloading NLTK data...")
+
+nltk.download("punkt_tab", download_dir=nltk_data_path)
+
+print("NLTK data downloaded successfully.")

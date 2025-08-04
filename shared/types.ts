@@ -62,8 +62,15 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
+  sentence_boundaries: [number, number][] | null;
   page_transition_type: PageTransitionType;
   created_at: string;
+  updated_at: string;
+}
+
+export interface BookPageSchema<T extends string | null = string | null>
+  extends Omit<BookPage, "sentence_boundaries"> {
+  sentence_boundaries: T; // Stored as JSON string in the database
 }
 
 export interface BookPageCreate
@@ -87,4 +94,12 @@ export interface NLPPreProcessReq {
   language: Language;
 }
 
-export interface NLPPreProcessRes {}
+export type NLPPreProcessRes =
+  | {
+      success: true;
+      book_page_id: string;
+      result: {
+        sentence_boundaries: [number, number][];
+      };
+    }
+  | { success: false; book_page_id: string };

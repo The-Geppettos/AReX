@@ -1,6 +1,6 @@
 import type { Book, BookDetail, BookList, Language } from "@shared/types";
-import type { BooksTable } from "@src/client/maindb/tables/books";
-import type { BookPagesTable } from "@src/client/maindb/tables/bookPage";
+import type { BooksTable } from "@src/component/maindb/tables/books";
+import type { BookPagesTable } from "@src/component/maindb/tables/bookPage";
 
 export class BookService {
   private booksTable: BooksTable;

@@ -40,6 +40,7 @@ services:
       - ./nlp:/app/nlp
       - ./.env:/app/.env
       - /app/nlp/.venv
+      - /app/nlp/nltk_data
     command: sh -c "python -m prepare dev && python -u dev.py"
     depends_on:
       - rabbitmq

@@ -1,8 +1,8 @@
-import type { BookPagesTable } from "@src/client/maindb/tables/bookPage";
-import type { BookChaptersTable } from "@src/client/maindb/tables/bookChapter";
+import type { BookPagesTable } from "@src/component/maindb/tables/bookPage";
+import type { BookChaptersTable } from "@src/component/maindb/tables/bookChapter";
 import type { BookPage, BookPageDetail } from "@shared/types";
-import type { NLPPreProcessProducer } from "@src/client/rabbitmq/queues/nlpPreProcess";
-import type { BooksTable } from "@src/client/maindb/tables/books";
+import type { NLPPreProcessProducer } from "@src/component/rabbitmq/queues/nlpPreProcess";
+import type { BooksTable } from "@src/component/maindb/tables/books";
 
 export class BookPageService {
   private bookPagesTable: BookPagesTable;
@@ -42,6 +42,10 @@ export class BookPageService {
     return {
       ...bookPage,
       chapter_title: chapterTitle,
+      sentence_boundaries:
+        bookPage.sentence_boundaries !== null
+          ? JSON.parse(bookPage.sentence_boundaries)
+          : null,
     };
   }
 
@@ -107,5 +111,24 @@ export class BookPageService {
     );
 
     return bookPage;
+  }
+
+  async updatePreProcessedData(
+    bookPageId: string,
+    sentenceBoundaries: Exclude<BookPage["sentence_boundaries"], null>,
+  ): Promise<BookPage> {
+    const updatedBookPage = await this.bookPagesTable.updatePreProcessedData(
+      bookPageId,
+      JSON.stringify(sentenceBoundaries),
+    );
+
+    if (!updatedBookPage) {
+      throw new Error("Book page not found");
+    }
+
+    return {
+      ...updatedBookPage,
+      sentence_boundaries: JSON.parse(updatedBookPage.sentence_boundaries),
+    };
   }
 }
