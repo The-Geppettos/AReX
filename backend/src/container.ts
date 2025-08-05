@@ -13,8 +13,9 @@ import { ChromaDB } from "@src/component/chromadb";
 import { BookContentVectorCollection } from "@src/component/chromadb/vectorCollections/bookContent";
 
 import { BookService } from "@src/services/book";
-import { BookChapterService } from "@src/services/bookChapter";
 import { BookPageService } from "@src/services/bookPage";
+import { BookUploadService } from "./services/bookUploadService";
+
 import { RabbitMQ } from "@src/component/rabbitmq";
 import {
   NLPPreProcessConsumer,
@@ -82,9 +83,9 @@ const rabbitMQ = new RabbitMQ(rbmq_host, rbmq_port);
 const nlpPreProcessProducer = new NLPPreProcessProducer(rabbitMQ);
 const nlpPreProcessConsumer = new NLPPreProcessConsumer(rabbitMQ);
 
-const bookService = new BookService(booksTable, bookPagesTable);
-const bookChapterService = new BookChapterService(bookChaptersTable);
-const bookPageService = new BookPageService(
+const bookService = new BookService(booksTable);
+const bookPageService = new BookPageService(bookPagesTable, bookChaptersTable);
+const bookUploadService = new BookUploadService(
   bookPagesTable,
   booksTable,
   bookChaptersTable,
@@ -98,6 +99,6 @@ export default {
   rabbitMQ,
   nlpPreProcessConsumer,
   bookService,
-  bookChapterService,
   bookPageService,
+  bookUploadService,
 };

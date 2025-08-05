@@ -78,7 +78,7 @@ export abstract class Table<T extends Object = {}> {
     });
   }
 
-  protected async insert(instance: T | T[]): Promise<T[]> {
+  async insert(instance: T | T[]): Promise<T[]> {
     let instances;
     if (!Array.isArray(instance)) {
       instances = [instance];
@@ -122,6 +122,38 @@ export abstract class Table<T extends Object = {}> {
     return result.rows;
   }
 
+  async updateById(id: string, instance: Partial<T>): Promise<T | null> {
+    if (!Object.keys(instance).length) {
+      throw new Error("Cannot update with empty instance");
+    }
+
+    const fields = [];
+    const values = [];
+
+    for (const [field, value] of Object.entries(instance)) {
+      fields.push(field);
+      values.push(value);
+    }
+
+    values.push(id);
+
+    const setClause = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+
+    const query = `UPDATE ${this.tableName}
+                   SET ${setClause}
+                   WHERE ${this.idField as string} = $${fields.length + 1}
+                   RETURNING *;`;
+    const result = await this.mainDb.query<T>(query, values);
+
+    if (!result.rowCount) {
+      return null;
+    }
+
+    return result.rows[0];
+  }
+
   async getById(id: string) {
     const result = await this.mainDb.query<T>(
       `SELECT * FROM ${this.tableName} WHERE ${this.idField as string} = $1`,
@@ -133,5 +165,27 @@ export abstract class Table<T extends Object = {}> {
     }
 
     return result.rows[0];
+  }
+
+  async count(query: Partial<T> = {}): Promise<number> {
+    const values = [];
+    const fields = [];
+
+    for (const [field, value] of Object.entries(query)) {
+      fields.push(field);
+      values.push(value);
+    }
+    const whereClause = fields
+      .map((field, index) => {
+        return `${field} = $${index + 1}`;
+      })
+      .join(" AND ");
+
+    const result = await this.mainDb.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM ${this.tableName} ${whereClause ? `WHERE ${whereClause}` : ""}`,
+      values,
+    );
+
+    return result.rows?.[0]?.count ? parseInt(result.rows[0].count, 10) : 0;
   }
 }

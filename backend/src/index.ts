@@ -2,9 +2,9 @@ import {
   LANGUAGES,
   NLPPreProcessRes,
   PAGE_TRANSITION_TYPES,
-  type BookChapterCreate,
-  type BookCreate,
-  type BookPageCreate,
+  type BookChapterUpload,
+  type BookUpload,
+  type BookPageUpload,
 } from "@shared/types";
 
 import container from "@src/container";
@@ -48,34 +48,6 @@ const main = async () => {
     },
   );
 
-  container.mainServer.post("/api/book", async (req, res) => {
-    try {
-      const { title, author, language } = req.body as BookCreate;
-
-      if (!title || !author) {
-        return res.status(400).json({ error: "Title and author are required" });
-      }
-      if (typeof title !== "string" || typeof author !== "string") {
-        return res
-          .status(400)
-          .json({ error: "Title and author must be strings" });
-      }
-      if (!LANGUAGES.includes(language)) {
-        return res
-          .status(400)
-          .json({ error: `Language must be one of ${LANGUAGES.join(", ")}` });
-      }
-      const book = await container.bookService.createBook(
-        title,
-        author,
-        language,
-      );
-      res.status(201).json(book);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to create book" });
-    }
-  });
-
   container.mainServer.get("/api/book/:id", async (req, res) => {
     try {
       const book = await container.bookService.getById(req.params.id);
@@ -108,9 +80,53 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book/:id/chapter", async (req, res) => {
+  container.mainServer.get("/api/book/:id/page/:page", async (req, res) => {
+    const { id, page } = req.params;
+    try {
+      const bookPage = await container.bookPageService.getBookPage(
+        id,
+        parseInt(page),
+      );
+      if (!bookPage) {
+        return res.status(404).json({ error: "Book page not found" });
+      }
+      res.json(bookPage);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch book page" });
+    }
+  });
+
+  container.mainServer.post("/api/book_upload/1", async (req, res) => {
+    try {
+      const { title, author, language } = req.body as BookUpload;
+
+      if (!title || !author) {
+        return res.status(400).json({ error: "Title and author are required" });
+      }
+      if (typeof title !== "string" || typeof author !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Title and author must be strings" });
+      }
+      if (!LANGUAGES.includes(language)) {
+        return res
+          .status(400)
+          .json({ error: `Language must be one of ${LANGUAGES.join(", ")}` });
+      }
+      const book = await container.bookUploadService.bookUpload1(
+        title,
+        author,
+        language,
+      );
+      res.status(201).json(book);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create book" });
+    }
+  });
+
+  container.mainServer.post("/api/book_upload/2/:id", async (req, res) => {
     const { id } = req.params;
-    const { chapter_number, title } = req.body as BookChapterCreate;
+    const { chapter_number, title } = req.body as BookChapterUpload;
 
     if (!chapter_number || !title) {
       return res
@@ -123,7 +139,7 @@ const main = async () => {
     }
 
     try {
-      const chapter = await container.bookChapterService.createChapter(
+      const chapter = await container.bookUploadService.bookUpload2(
         id,
         chapter_number,
         title,
@@ -134,10 +150,10 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book/:id/page", async (req, res) => {
+  container.mainServer.post("/api/book_upload/3/:id", async (req, res) => {
     const { id } = req.params;
     const { chapter_id, content, page_number, page_transition_type } =
-      req.body as BookPageCreate;
+      req.body as BookPageUpload;
 
     if (!chapter_id || !content || !page_number || !page_transition_type) {
       return res.status(400).json({
@@ -156,7 +172,7 @@ const main = async () => {
     }
 
     try {
-      const bookPage = await container.bookPageService.createBookPage(
+      const bookPage = await container.bookUploadService.bookUpload3(
         id,
         chapter_id,
         page_number,
@@ -169,19 +185,17 @@ const main = async () => {
     }
   });
 
-  container.mainServer.get("/api/book/:id/page/:page", async (req, res) => {
-    const { id, page } = req.params;
+  container.mainServer.post("/api/book_upload/4/:id", async (req, res) => {
     try {
-      const bookPage = await container.bookPageService.getBookPage(
-        id,
-        parseInt(page),
-      );
-      if (!bookPage) {
-        return res.status(404).json({ error: "Book page not found" });
+      const { id } = req.params;
+
+      const book = await container.bookUploadService.bookUpload4(id);
+      if (!book) {
+        return res.status(404).json({ error: "Book not found" });
       }
-      res.json(bookPage);
+      res.status(200).json(book);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch book page" });
+      res.status(500).json({ error: "Failed to update book" });
     }
   });
 
@@ -218,7 +232,7 @@ const main = async () => {
         }
       }
 
-      await container.bookPageService.updatePreProcessedData(
+      await container.bookUploadService.updatePreProcessedData(
         nlpPreProcessRes.book_page_id,
         nlpPreProcessRes.result.sentence_boundaries,
       );

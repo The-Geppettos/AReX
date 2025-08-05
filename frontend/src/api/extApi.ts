@@ -1,11 +1,10 @@
 import type {
   Book,
   BookChapter,
-  BookChapterCreate,
-  BookCreate,
-  BookDetail,
+  BookChapterUpload,
+  BookUpload,
   BookList,
-  BookPageCreate,
+  BookPageUpload,
   BookPageDetail,
 } from "@shared/types";
 import axios from "axios";
@@ -33,7 +32,7 @@ class ExtAPI {
     return response.data;
   }
 
-  static async getBookInfo(id: string): Promise<BookDetail> {
+  static async getBookInfo(id: string): Promise<Book> {
     const response = await axiosInstance.get(`/api/book/${id}`);
     return response.data;
   }
@@ -66,31 +65,38 @@ class ExtAPI {
     return response.data;
   }
 
-  static async createBook(bookInfo: BookCreate): Promise<Book> {
-    const response = await axiosInstance.post("/api/book", bookInfo);
+  static async bookUpload1(bookInfo: BookUpload): Promise<Book> {
+    const response = await axiosInstance.post("/api/book_upload/1", bookInfo);
     return response.data;
   }
 
-  static async createBookChapter(
-    chapterInfo: BookChapterCreate,
+  static async bookUpload2(
+    bookId: string,
+    chapterInfo: BookChapterUpload,
   ): Promise<BookChapter> {
     const response = await axiosInstance.post(
-      `/api/book/${chapterInfo.book_id}/chapter`,
+      `/api/book_upload/2/${bookId}`,
       chapterInfo,
     );
     return response.data;
   }
 
-  static async createBookPage(
-    bookPageInfo: BookPageCreate,
+  static async bookUpload3(
+    bookId: string,
+    bookPageInfo: BookPageUpload,
   ): Promise<BookPageDetail> {
     const response = await axiosInstance.post(
-      `/api/book/${bookPageInfo.book_id}/page`,
+      `/api/book_upload/3/${bookId}`,
       bookPageInfo,
     );
     const bookPage = response.data;
 
     return bookPage;
+  }
+
+  static async bookUpload4(id: string): Promise<Book> {
+    const response = await axiosInstance.post(`/api/book_upload/4/${id}`);
+    return response.data;
   }
 
   static async publishBook(id: string): Promise<Book> {

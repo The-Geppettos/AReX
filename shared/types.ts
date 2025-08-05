@@ -1,6 +1,12 @@
 export const LANGUAGES = ["ko", "en"] as const;
 
-export const BOOK_STATUS = ["draft", "published"] as const;
+export const BOOK_STATUS = [
+  "uploading",
+  "uploaded",
+  "preprocessing",
+  "draft",
+  "published",
+] as const;
 
 export const PAGE_TRANSITION_TYPES = [
   "new_chapter",
@@ -24,16 +30,13 @@ export interface Book {
   author: string;
   status: BookStatus;
   language: Language;
+  total_pages: number;
   created_at: string;
   updated_at: string;
 }
 
-export interface BookCreate
+export interface BookUpload
   extends Pick<Book, "title" | "author" | "language"> {}
-
-export interface BookDetail extends Book {
-  total_pages: number;
-}
 
 export interface BookList {
   books: Book[];
@@ -50,8 +53,8 @@ export interface BookChapter {
   created_at: string;
 }
 
-export interface BookChapterCreate
-  extends Pick<BookChapter, "book_id" | "chapter_number" | "title"> {}
+export interface BookChapterUpload
+  extends Pick<BookChapter, "chapter_number" | "title"> {}
 
 export interface BookPage {
   id: string;
@@ -62,25 +65,21 @@ export interface BookPage {
   content_length: number;
   offset_start: number;
   offset_end: number;
-  sentence_boundaries: [number, number][] | null;
+  sentence_boundaries: [number, number][];
   page_transition_type: PageTransitionType;
+  preprocessed: boolean;
   created_at: string;
   updated_at: string;
 }
 
-export interface BookPageSchema<T extends string | null = string | null>
-  extends Omit<BookPage, "sentence_boundaries"> {
-  sentence_boundaries: T; // Stored as JSON string in the database
+export interface BookPageSchema extends Omit<BookPage, "sentence_boundaries"> {
+  sentence_boundaries: string; // Stored as JSON string in the database
 }
 
-export interface BookPageCreate
+export interface BookPageUpload
   extends Pick<
     BookPage,
-    | "book_id"
-    | "chapter_id"
-    | "content"
-    | "page_number"
-    | "page_transition_type"
+    "chapter_id" | "content" | "page_number" | "page_transition_type"
   > {}
 
 export interface BookPageDetail extends BookPage {

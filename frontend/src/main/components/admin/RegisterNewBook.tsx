@@ -170,7 +170,7 @@ const RegisterNewBook = () => {
 
     try {
       setIsUploading(true);
-      const createdBook = await ExtAPI.createBook({
+      const createdBook = await ExtAPI.bookUpload1({
         title: bookTitle.value.trim(),
         author: author.value.trim(),
         language: language.value,
@@ -184,8 +184,7 @@ const RegisterNewBook = () => {
       }))) {
         const chapterTitle = chapter.title.value.trim();
 
-        const createdChapter = await ExtAPI.createBookChapter({
-          book_id: createdBook.id,
+        const createdChapter = await ExtAPI.bookUpload2(createdBook.id, {
           title: chapterTitle,
           chapter_number: idx + 1,
         });
@@ -214,8 +213,7 @@ const RegisterNewBook = () => {
 
           const pageContent = content.slice(0, response.visibleContentLength);
 
-          await ExtAPI.createBookPage({
-            book_id: createdBook.id,
+          await ExtAPI.bookUpload3(createdBook.id, {
             chapter_id: createdChapter.id,
             content: TextProcessor.fromText(pageContent).trim().result(),
             page_number: pageNumber++,
@@ -237,6 +235,9 @@ const RegisterNewBook = () => {
           firstPage = false;
         }
       }
+
+      await ExtAPI.bookUpload4(createdBook.id);
+
       alert(
         "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
       );

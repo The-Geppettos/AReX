@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { BookDetail, BookPageDetail } from "@shared/types";
+import type { Book, BookPageDetail } from "@shared/types";
 import ExtAPI from "../api/extApi";
 import BookPageView from "./BookPageView";
 import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "./const";
@@ -14,7 +14,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
   const headerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
   const footerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
 
-  const [bookInfo, setBookInfo] = useState<BookDetail | null>(null);
+  const [bookInfo, setBookInfo] = useState<Book | null>(null);
   const [pageNumber, setPageNumber] = useState<number | null>(null);
   const [leftPage, setLeftPage] = useState<BookPageDetail | null>(null);
   const [rightPage, setRightPage] = useState<BookPageDetail | null>(null);
