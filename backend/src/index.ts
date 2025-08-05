@@ -1,7 +1,10 @@
-import type {
-  BookChapterCreate,
-  BookCreate,
-  BookPageCreate,
+import {
+  LANGUAGES,
+  NLPPreProcessRes,
+  PAGE_TRANSITION_TYPES,
+  type BookChapterCreate,
+  type BookCreate,
+  type BookPageCreate,
 } from "@shared/types";
 
 import container from "@src/container";
@@ -19,7 +22,7 @@ const main = async () => {
       const limit = parseInt(req.params.limit, 10);
 
       try {
-        const books = await container.bookController.getPublishedBooks(
+        const books = await container.bookService.getPublishedBooks(
           offset,
           limit,
         );
@@ -37,7 +40,7 @@ const main = async () => {
       const limit = parseInt(req.params.limit, 10);
 
       try {
-        const books = await container.bookController.getAllBooks(offset, limit);
+        const books = await container.bookService.getAllBooks(offset, limit);
         res.json(books);
       } catch (error) {
         res.status(500).json({ error: "Failed to fetch all books" });
@@ -47,7 +50,7 @@ const main = async () => {
 
   container.mainServer.post("/api/book", async (req, res) => {
     try {
-      const { title, author } = req.body as BookCreate;
+      const { title, author, language } = req.body as BookCreate;
 
       if (!title || !author) {
         return res.status(400).json({ error: "Title and author are required" });
@@ -57,7 +60,16 @@ const main = async () => {
           .status(400)
           .json({ error: "Title and author must be strings" });
       }
-      const book = await container.bookController.createBook(title, author);
+      if (!LANGUAGES.includes(language)) {
+        return res
+          .status(400)
+          .json({ error: `Language must be one of ${LANGUAGES.join(", ")}` });
+      }
+      const book = await container.bookService.createBook(
+        title,
+        author,
+        language,
+      );
       res.status(201).json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to create book" });
@@ -66,7 +78,7 @@ const main = async () => {
 
   container.mainServer.get("/api/book/:id", async (req, res) => {
     try {
-      const book = await container.bookController.getById(req.params.id);
+      const book = await container.bookService.getById(req.params.id);
       if (!book) {
         return res.status(404).json({ error: "Book not found" });
       }
@@ -79,7 +91,7 @@ const main = async () => {
   container.mainServer.put("/api/book/:id/publish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await container.bookController.publishBook(id);
+      const book = await container.bookService.publishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to publish book" });
@@ -89,7 +101,7 @@ const main = async () => {
   container.mainServer.put("/api/book/:id/unpublish", async (req, res) => {
     const { id } = req.params;
     try {
-      const book = await container.bookController.unPublishBook(id);
+      const book = await container.bookService.unPublishBook(id);
       res.json(book);
     } catch (error) {
       res.status(500).json({ error: "Failed to unpublish book" });
@@ -111,7 +123,7 @@ const main = async () => {
     }
 
     try {
-      const chapter = await container.bookChapterController.createChapter(
+      const chapter = await container.bookChapterService.createChapter(
         id,
         chapter_number,
         title,
@@ -138,15 +150,13 @@ const main = async () => {
       typeof chapter_id !== "string" ||
       typeof content !== "string" ||
       typeof page_number !== "number" ||
-      !(
-        ["new_chapter", "line_break", "space", "intra_word_break"] as const
-      ).includes(page_transition_type)
+      !PAGE_TRANSITION_TYPES.includes(page_transition_type)
     ) {
       return res.status(400).json({ error: "Invalid page data" });
     }
 
     try {
-      const bookPage = await container.bookPageController.createBookPage(
+      const bookPage = await container.bookPageService.createBookPage(
         id,
         chapter_id,
         page_number,
@@ -162,7 +172,7 @@ const main = async () => {
   container.mainServer.get("/api/book/:id/page/:page", async (req, res) => {
     const { id, page } = req.params;
     try {
-      const bookPage = await container.bookPageController.getBookPage(
+      const bookPage = await container.bookPageService.getBookPage(
         id,
         parseInt(page),
       );
@@ -172,6 +182,54 @@ const main = async () => {
       res.json(bookPage);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch book page" });
+    }
+  });
+
+  container.nlpPreProcessConsumer.consume(async (message, acknowledge) => {
+    try {
+      const nlpPreProcessRes = JSON.parse(
+        message.content.toString(),
+      ) as NLPPreProcessRes;
+
+      if (!nlpPreProcessRes.success) {
+        throw new Error("NLP pre-processing failed");
+      }
+
+      if (!nlpPreProcessRes.book_page_id) {
+        throw new Error("Invalid message format: book_page_id is required");
+      }
+
+      if (!Array.isArray(nlpPreProcessRes.result.sentence_boundaries)) {
+        throw new Error(
+          "Invalid message format: sentence_boundaries must be an array",
+        );
+      }
+
+      for (const boundary of nlpPreProcessRes.result.sentence_boundaries) {
+        if (
+          !Array.isArray(boundary) ||
+          boundary.length !== 2 ||
+          typeof boundary[0] !== "number" ||
+          typeof boundary[1] !== "number"
+        ) {
+          throw new Error(
+            "Invalid sentence boundary format: must be an array of two numbers",
+          );
+        }
+      }
+
+      await container.bookPageService.updatePreProcessedData(
+        nlpPreProcessRes.book_page_id,
+        nlpPreProcessRes.result.sentence_boundaries,
+      );
+    } catch (error) {
+      console.error("Error processing message:", error);
+    }
+
+    try {
+      await acknowledge();
+    } catch (error) {
+      console.error("Error acknowledging message:", error);
     }
   });
 
