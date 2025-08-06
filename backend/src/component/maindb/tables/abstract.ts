@@ -78,7 +78,10 @@ export abstract class Table<T extends Object = {}> {
     });
   }
 
-  async insert(instance: T | T[]): Promise<T[]> {
+  insert(instance: T): Promise<T | null>;
+  insert(instances: T[]): Promise<T[]>;
+
+  async insert(instance: T | T[]): Promise<T | null | T[]> {
     let instances;
     if (!Array.isArray(instance)) {
       instances = [instance];
@@ -113,13 +116,11 @@ export abstract class Table<T extends Object = {}> {
     const query = `INSERT INTO ${this.tableName} (${fields.join(",")}) VALUES ${placeholders.join(",")} RETURNING *;`;
     const result = await this.mainDb.query<T>(query, values);
 
-    if (result.rowCount !== instances.length) {
-      throw new Error(
-        "Unexpected number of rows affected when inserting records",
-      );
+    if (Array.isArray(instance)) {
+      return result.rows;
+    } else {
+      return result.rows?.[0] || null;
     }
-
-    return result.rows;
   }
 
   async updateById(id: string, instance: Partial<T>): Promise<T | null> {

@@ -236,14 +236,24 @@ const main = async () => {
         nlpPreProcessRes.book_page_id,
         nlpPreProcessRes.result.sentence_boundaries,
       );
+      acknowledge();
     } catch (error) {
       console.error("Error processing message:", error);
     }
+  });
 
+  container.postProcessConsumer.consume(async (message, acknowledge) => {
     try {
-      await acknowledge();
+      const { book_id } = JSON.parse(message.content.toString());
+
+      if (!book_id) {
+        throw new Error("Invalid message format: book_id is required");
+      }
+
+      await container.bookUploadService.postProcess(book_id);
+      acknowledge();
     } catch (error) {
-      console.error("Error acknowledging message:", error);
+      console.error("Error processing post-process message:", error);
     }
   });
 

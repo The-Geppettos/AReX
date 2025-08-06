@@ -6,7 +6,7 @@ export class BookContentVectorCollection extends VectorCollection {
   async insert(data: {
     book_id: string;
     chapter_id: string;
-    page_number: number;
+    offset: number;
     content: string;
   }): Promise<void> {
     if (!this.collection) {
@@ -18,7 +18,7 @@ export class BookContentVectorCollection extends VectorCollection {
       metadatas: [
         {
           chapter_id: data.chapter_id,
-          page_number: data.page_number,
+          offset: data.offset,
           content: data.content,
         },
       ],

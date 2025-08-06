@@ -21,6 +21,10 @@ import {
   NLPPreProcessConsumer,
   NLPPreProcessProducer,
 } from "@src/component/rabbitmq/queues/nlpPreProcess";
+import {
+  PostProcessConsumer,
+  PostProcessProducer,
+} from "@src/component/rabbitmq/queues/postProcess";
 
 dotenv.config({
   path: "../.env",
@@ -83,6 +87,9 @@ const rabbitMQ = new RabbitMQ(rbmq_host, rbmq_port);
 const nlpPreProcessProducer = new NLPPreProcessProducer(rabbitMQ);
 const nlpPreProcessConsumer = new NLPPreProcessConsumer(rabbitMQ);
 
+const postProcessProducer = new PostProcessProducer(rabbitMQ);
+const postProcessConsumer = new PostProcessConsumer(rabbitMQ);
+
 const bookService = new BookService(booksTable);
 const bookPageService = new BookPageService(bookPagesTable, bookChaptersTable);
 const bookUploadService = new BookUploadService(
@@ -90,6 +97,8 @@ const bookUploadService = new BookUploadService(
   booksTable,
   bookChaptersTable,
   nlpPreProcessProducer,
+  postProcessProducer,
+  bookContentVectorCollection,
 );
 
 export default {
@@ -98,6 +107,7 @@ export default {
   chromaDb,
   rabbitMQ,
   nlpPreProcessConsumer,
+  postProcessConsumer,
   bookService,
   bookPageService,
   bookUploadService,

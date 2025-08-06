@@ -3,6 +3,11 @@ import { Queue } from "./queues/abstract";
 
 const RETRY_INTERVAL = 5000;
 
+export type ConsumeCallback = (
+  msg: amqp.ConsumeMessage,
+  acknowledge: () => void,
+) => void;
+
 export class RabbitMQ {
   private connectionPromise: Promise<amqp.ChannelModel | null> =
     Promise.resolve(null);
@@ -13,7 +18,7 @@ export class RabbitMQ {
   private queues: Queue[] = [];
   private consumers: [
     queueName: string,
-    consumeCallback: (msg: amqp.ConsumeMessage | null) => void,
+    consumeCallback: ConsumeCallback,
     options?: amqp.Options.Consume,
   ][] = [];
 
@@ -31,7 +36,7 @@ export class RabbitMQ {
 
   addConsumer(
     queueName: string,
-    consumeCallback: (msg: amqp.ConsumeMessage | null) => void,
+    consumeCallback: ConsumeCallback,
     options?: amqp.Options.Consume,
   ) {
     this.consumers.push([queueName, consumeCallback, options]);
@@ -48,18 +53,6 @@ export class RabbitMQ {
     }
 
     channel.sendToQueue(queueName, Buffer.from(message), options);
-  }
-
-  async acknowledgeMessage(
-    message: amqp.ConsumeMessage,
-    allUpTo: boolean = false,
-  ): Promise<void> {
-    const channel = await this.channelPromise;
-    if (!channel) {
-      throw new Error("Channel is not initialized. Call connect() first.");
-    }
-
-    channel.ack(message, allUpTo);
   }
 
   private async resolveChannelModel(
@@ -151,7 +144,15 @@ export class RabbitMQ {
       }
 
       for (const [queueName, consumeCallback, options] of this.consumers) {
-        await channel.consume(queueName, consumeCallback, options);
+        const callback = (msg: amqp.ConsumeMessage | null) => {
+          if (!msg) {
+            console.warn(`Received null message for queue: ${queueName}`);
+            return;
+          }
+          const acknowledge = () => channel.ack(msg);
+          consumeCallback(msg, acknowledge);
+        };
+        await channel.consume(queueName, callback, options);
         console.log(`Consumer for queue ${queueName} registered successfully.`);
       }
 

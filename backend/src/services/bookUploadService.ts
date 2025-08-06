@@ -9,24 +9,36 @@ import type {
 } from "@shared/types";
 import type { NLPPreProcessProducer } from "@src/component/rabbitmq/queues/nlpPreProcess";
 import type { BooksTable } from "@src/component/maindb/tables/books";
+import type { PostProcessProducer } from "@src/component/rabbitmq/queues/postProcess";
+import type { BookContentVectorCollection } from "@src/component/chromadb/vectorCollections/bookContent";
+
 import { generateId } from "@src/util";
 
+const CHUNK_SENTENCES = 5;
+const CHUNK_SENTENCE_OVERLAP = 2;
+
 export class BookUploadService {
-  private bookPagesTable: BookPagesTable;
-  private booksTable: BooksTable;
-  private bookChaptersTable: BookChaptersTable;
-  private nlpPreProcessProducer: NLPPreProcessProducer;
+  private bookPagesTable;
+  private booksTable;
+  private bookChaptersTable;
+  private nlpPreProcessProducer;
+  private postProcessProducer;
+  private bookContentVectorCollection;
 
   constructor(
     bookPagesTable: BookPagesTable,
     booksTable: BooksTable,
     bookChaptersTable: BookChaptersTable,
     nlpPreProcessProducer: NLPPreProcessProducer,
+    postProcessProducer: PostProcessProducer,
+    bookContentVectorCollection: BookContentVectorCollection,
   ) {
     this.bookPagesTable = bookPagesTable;
     this.booksTable = booksTable;
     this.bookChaptersTable = bookChaptersTable;
     this.nlpPreProcessProducer = nlpPreProcessProducer;
+    this.postProcessProducer = postProcessProducer;
+    this.bookContentVectorCollection = bookContentVectorCollection;
   }
 
   async bookUpload1(
@@ -49,11 +61,11 @@ export class BookUploadService {
       total_pages: 0,
     });
 
-    if (books.length === 0) {
+    if (books === null) {
       throw new Error("Failed to create book");
     }
 
-    return books[0];
+    return books;
   }
 
   async bookUpload2(
@@ -72,11 +84,11 @@ export class BookUploadService {
       created_at: createdAt,
     });
 
-    if (chapters.length === 0) {
+    if (chapters === null) {
       throw new Error("Failed to create book chapter");
     }
 
-    return chapters[0];
+    return chapters;
   }
 
   async bookUpload3(
@@ -144,7 +156,7 @@ export class BookUploadService {
       updated_at: updatedAt,
     });
 
-    if (result.length === 0) {
+    if (result === null) {
       throw new Error("Failed to create book page");
     }
 
@@ -155,7 +167,7 @@ export class BookUploadService {
 
     await this.nlpPreProcessProducer.sendMessage(
       {
-        book_page_id: result[0].id,
+        book_page_id: result.id,
         content,
         prev_content: prevContent,
         language: book.language,
@@ -163,7 +175,7 @@ export class BookUploadService {
       { persistent: true },
     );
 
-    return { ...result[0], sentence_boundaries: [] };
+    return { ...result, sentence_boundaries: [] };
   }
 
   private linkPrevSentenceBoundaries(
@@ -290,33 +302,167 @@ export class BookUploadService {
     });
 
     if (preProcessedPages === book.total_pages) {
-      console.log(bookPage.book_id, "ready2");
+      await this.postProcessProducer.sendMessage(
+        {
+          book_id: bookPage.book_id,
+        },
+        { persistent: true },
+      );
     }
   }
 
-  async bookUpload4(id: string): Promise<Book> {
-    const totalPages = await this.bookPagesTable.count({ book_id: id });
+  async bookUpload4(bookId: string): Promise<Book> {
+    const totalPages = await this.bookPagesTable.count({ book_id: bookId });
     const updatedAt = new Date().toISOString();
 
-    const book = await this.booksTable.updateById(id, {
-      status: "uploaded",
+    const book = await this.booksTable.updateById(bookId, {
+      status: "preprocessing",
       total_pages: totalPages,
       updated_at: updatedAt,
     });
 
     if (!book) {
-      throw new Error(`Failed to finish book upload for ID: ${id}`);
+      throw new Error(`Failed to finish book upload for ID: ${bookId}`);
     }
 
     const preProcessedPages = await this.bookPagesTable.count({
-      book_id: id,
+      book_id: bookId,
       preprocessed: true,
     });
 
     if (preProcessedPages === totalPages) {
-      console.log(id, "ready1");
+      await this.postProcessProducer.sendMessage(
+        {
+          book_id: bookId,
+        },
+        { persistent: true },
+      );
     }
 
     return book;
+  }
+
+  async postProcess(bookId: string) {
+    await this.booksTable.updateById(bookId, {
+      status: "preprocessing",
+      updated_at: new Date().toISOString(),
+    });
+
+    const book = await this.booksTable.getById(bookId);
+
+    if (!book) {
+      throw new Error(`Book not found for ID: ${bookId}`);
+    }
+
+    const cursor = [1, -1]; // [pageNumber, sentenceIndex]
+
+    let bookPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+      bookId,
+      cursor[0],
+    );
+
+    if (!bookPage) {
+      throw new Error(
+        `Book page not found for book ID: ${bookId}, page: ${cursor[0]}`,
+      );
+    }
+
+    let sentenceBoundaries = JSON.parse(
+      bookPage.sentence_boundaries,
+    ) as BookPage["sentence_boundaries"];
+    let lastOffset = bookPage.offset_start;
+    let lastChapterId = bookPage.chapter_id;
+
+    let sentences: string[] = [];
+    let sentenceContinue = "";
+
+    while (bookPage) {
+      while (sentences.length < CHUNK_SENTENCES) {
+        const isLastSentence = cursor[1] === sentenceBoundaries.length - 1;
+        const isNextSentenceLinked =
+          cursor[1] + 1 === sentenceBoundaries.length - 1 &&
+          sentenceBoundaries[cursor[1] + 1][1] > bookPage.content_length;
+
+        if (isLastSentence || isNextSentenceLinked) {
+          if (isNextSentenceLinked) {
+            sentenceContinue = bookPage.content.slice(
+              sentenceBoundaries[cursor[1] + 1][0],
+            );
+          }
+
+          lastOffset = bookPage.offset_start + sentenceBoundaries[cursor[1]][0];
+          lastChapterId = bookPage.chapter_id;
+
+          cursor[0]++;
+          cursor[1] = 0;
+
+          bookPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+            bookId,
+            cursor[0],
+          );
+
+          if (!bookPage) {
+            break;
+          }
+
+          sentenceBoundaries = JSON.parse(
+            bookPage.sentence_boundaries,
+          ) as BookPage["sentence_boundaries"];
+
+          if (bookPage.page_transition_type === "new_chapter") {
+            break;
+          }
+        } else {
+          cursor[1]++;
+        }
+
+        let sentence;
+
+        if (sentenceBoundaries[cursor[1]][0] < 0) {
+          sentence = sentenceContinue;
+          if (bookPage.page_transition_type === "space") {
+            sentence = sentence + " ";
+          }
+          sentence =
+            sentence +
+            bookPage.content.slice(0, sentenceBoundaries[cursor[1]][1]);
+        } else {
+          sentence = bookPage.content.slice(
+            sentenceBoundaries[cursor[1]][0],
+            sentenceBoundaries[cursor[1]][1],
+          );
+        }
+
+        sentences.push(sentence);
+      }
+
+      let offset;
+      if (bookPage) {
+        offset = bookPage.offset_start + sentenceBoundaries[cursor[1]][0];
+      } else {
+        offset = lastOffset;
+      }
+
+      let chapterId;
+      if (bookPage) {
+        chapterId = bookPage.chapter_id;
+      } else {
+        chapterId = lastChapterId;
+      }
+
+      await this.bookContentVectorCollection.insert({
+        book_id: bookId,
+        chapter_id: chapterId,
+        offset,
+        content: sentences.join(" "),
+      });
+
+      sentences = sentences.slice(-CHUNK_SENTENCE_OVERLAP);
+    }
+
+    await this.booksTable.updateById(bookId, {
+      status: "draft",
+      updated_at: new Date().toISOString(),
+    });
   }
 }

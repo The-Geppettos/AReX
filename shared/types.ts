@@ -2,8 +2,8 @@ export const LANGUAGES = ["ko", "en"] as const;
 
 export const BOOK_STATUS = [
   "uploading",
-  "uploaded",
   "preprocessing",
+  "postprocessing",
   "draft",
   "published",
 ] as const;
