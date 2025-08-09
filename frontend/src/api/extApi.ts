@@ -65,6 +65,14 @@ class ExtAPI {
     return response.data;
   }
 
+  static async conversate(query: string, bookId: string, offset: number) {
+    const response = await axiosInstance.post(
+      `/api/conversate/${bookId}/${offset}`,
+      { query },
+    );
+    return response.data;
+  }
+
   static async bookUpload1(bookInfo: BookUpload): Promise<Book> {
     const response = await axiosInstance.post("/api/book_upload/1", bookInfo);
     return response.data;

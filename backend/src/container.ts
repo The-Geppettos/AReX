@@ -14,7 +14,8 @@ import { BookContentVectorCollection } from "@src/component/chromadb/vectorColle
 
 import { BookService } from "@src/services/book";
 import { BookPageService } from "@src/services/bookPage";
-import { BookUploadService } from "./services/bookUploadService";
+import { BookUploadService } from "@src/services/bookUpload";
+import { ChatBotService } from "@src/services/chatBot";
 
 import { RabbitMQ } from "@src/component/rabbitmq";
 import {
@@ -48,6 +49,7 @@ const chromadb_port = process.env.CHROMA_DB_PORT
   : 8000;
 const openaiEmbeddingModel =
   process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+const openaiChatModel = process.env.OPENAI_CHAT_MODEL || "gpt-4o-mini";
 const openaiApiKey = process.env.OPENAI_API_KEY || "";
 
 const rbmq_host = process.env.RABBITMQ_HOST || "localhost";
@@ -100,6 +102,12 @@ const bookUploadService = new BookUploadService(
   postProcessProducer,
   bookContentVectorCollection,
 );
+const chatBotService = new ChatBotService(
+  openaiApiKey,
+  openaiChatModel,
+  bookContentVectorCollection,
+  booksTable,
+);
 
 export default {
   mainServer,
@@ -111,4 +119,5 @@ export default {
   bookService,
   bookPageService,
   bookUploadService,
+  chatBotService,
 };

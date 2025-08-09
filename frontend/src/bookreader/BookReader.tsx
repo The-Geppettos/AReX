@@ -4,6 +4,7 @@ import ExtAPI from "../api/extApi";
 import BookPageView from "./BookPageView";
 import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "./const";
 import { indentFirstLine } from "../lib";
+import { Helper } from "./helper";
 
 interface BookReaderProps {
   bookId: string;
@@ -156,7 +157,14 @@ const BookReader = ({ bookId }: BookReaderProps) => {
 
   return (
     <div ref={readerRef} className="book-reader">
-      <div ref={headerRef} className="book-reader-header"></div>
+      <div ref={headerRef} className="book-reader-header">
+        {bookInfo && (
+          <Helper
+            bookId={bookInfo.id}
+            offset={rightPage?.offset_end || leftPage?.offset_end || 0}
+          />
+        )}
+      </div>
       {pageWidth && (
         <div className="book-page-wrapper">
           {showSinglePage ? (

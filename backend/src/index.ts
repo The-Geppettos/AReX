@@ -96,6 +96,33 @@ const main = async () => {
     }
   });
 
+  container.mainServer.post("/api/conversate/:id/:offset", async (req, res) => {
+    try {
+      const { id, offset } = req.params;
+
+      const { query } = req.body;
+      if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+      if (typeof query !== "string") {
+        return res.status(400).json({ error: "Query must be a string" });
+      }
+
+      const response = await container.chatBotService.conversate(
+        query,
+        id,
+        parseInt(offset, 10),
+      );
+
+      console.log(response);
+
+      res.status(200).json(response);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
   container.mainServer.post("/api/book_upload/1", async (req, res) => {
     try {
       const { title, author, language } = req.body as BookUpload;
