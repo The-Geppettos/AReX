@@ -35,7 +35,7 @@ export class ChromaDB {
   }
 
   async initialize() {
-    console.log(`Initializing ChromaDB... at ${this.host}:${this.port}`);
+    console.info(`Initializing ChromaDB... at ${this.host}:${this.port}`);
 
     this.client = new ChromaClient({
       host: this.host,
@@ -70,7 +70,7 @@ export class ChromaDB {
       }
     }
 
-    console.log("ChromaDB initialized successfully.");
+    console.info("ChromaDB initialized successfully.");
   }
 
   async close() {

@@ -118,7 +118,7 @@ const main = async () => {
 
       res.status(200).json(response);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       res.status(500).json({ error: "Failed to send message" });
     }
   });
@@ -286,9 +286,9 @@ const main = async () => {
 
   const gracefulShutdown = async (signal?: NodeJS.Signals) => {
     if (signal) {
-      console.log(`Received ${signal}, shutting down server...`);
+      console.info(`Received ${signal}, shutting down server...`);
     } else {
-      console.log("Shutting down server...");
+      console.info("Shutting down server...");
     }
 
     await container.mainServer.close();
@@ -296,26 +296,25 @@ const main = async () => {
     await container.mainDb.close();
     await container.chromaDb.close();
 
-    console.log("All components closed successfully");
+    console.info("All components closed successfully");
     process.exit(0);
   };
 
   process.on("SIGINT", gracefulShutdown);
   process.on("SIGTERM", gracefulShutdown);
-  process.on("SIGUSR2", gracefulShutdown);
   process.on("uncaughtException", (error) => {
     console.error("Uncaught Exception:", error);
     gracefulShutdown();
   });
 
-  console.log("Initializing components...");
+  console.info("Initializing components...");
 
   await container.mainDb.initialize();
   await container.chromaDb.initialize();
   await container.rabbitMQ.initialize();
   await container.mainServer.initialize();
 
-  console.log("All components initialized successfully");
+  console.info("All components initialized successfully");
 };
 
 main();

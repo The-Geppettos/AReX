@@ -4,10 +4,9 @@
   "description": "AI-powered eBook reader backend server",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc --project tsconfig.json --incremental && tsc-alias",
-    "start": "node dist/backend/src/index.js",
-    "clean": "node clean.js dist",
-    "dev": "npm run clean && nodemon --watch src --watch ../shared --ext .ts --exec 'npm run build && npm run start'"
+    "build": "node clean.js && tsc --project tsconfig.json --incremental && tsc-alias",
+    "start": "node start.js",
+    "dev": "node dev.js"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +31,6 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "chokidar": "^4.0.3"
   }
 }

@@ -1,19 +1,14 @@
 const fs = require("fs");
+const path = require("path");
 
-const arg = process.argv.slice(2)[0];
+const DIST_DIR = path.resolve(__dirname, "dist");
+const LOG_PREFIX = "[clean]";
 
-if (!arg) {
-  console.error("Please provide a file path as an argument.");
-  process.exit(1);
-}
-
-const filePath = arg;
-
-if (fs.existsSync(filePath)) {
-  fs.rmSync(filePath, { recursive: true, force: true });
-  console.log(`Cleaned up ${filePath}`);
+if (fs.existsSync(DIST_DIR)) {
+  fs.rmSync(DIST_DIR, { recursive: true, force: true });
+  console.info(`${LOG_PREFIX} Cleaned up ${DIST_DIR}`);
 } else {
-  console.log(
-    `File or directory ${filePath} does not exist. Nothing to clean up.`,
+  console.info(
+    `${LOG_PREFIX} File or directory ${DIST_DIR} does not exist. Nothing to clean up.`,
   );
 }
