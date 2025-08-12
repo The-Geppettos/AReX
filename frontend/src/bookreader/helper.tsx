@@ -1,4 +1,4 @@
-import ExtAPI from "@src/api/extApi";
+import { ReadBookAPI } from "@src/api/readBook";
 import { useState } from "react";
 
 export const Helper = ({
@@ -14,7 +14,7 @@ export const Helper = ({
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        ExtAPI.conversate(message, bookId, offset);
+        ReadBookAPI.askAssistant(message, bookId, offset);
       }}
     >
       <input value={message} onChange={(e) => setMessage(e.target.value)} />

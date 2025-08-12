@@ -30,7 +30,7 @@ import {
   CloudUpload,
 } from "@mui/icons-material";
 import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "../../../bookreader/const";
-import ExtAPI from "../../../api/extApi";
+import { BookUploadAPI } from "@src/api/bookUpload";
 import {
   LANGUAGE_LABELS,
   LANGUAGES,
@@ -65,7 +65,7 @@ type InputState<T> = {
   error: string | null;
 };
 
-const RegisterNewBook = () => {
+export const RegisterNewBook = () => {
   const [bookTitle, setBookTitle] = useState<InputState<string>>({
     value: "",
     error: null,
@@ -170,7 +170,7 @@ const RegisterNewBook = () => {
 
     try {
       setIsUploading(true);
-      const createdBook = await ExtAPI.bookUpload1({
+      const createdBook = await BookUploadAPI.uploadBook({
         title: bookTitle.value.trim(),
         author: author.value.trim(),
         language: language.value,
@@ -184,7 +184,8 @@ const RegisterNewBook = () => {
       }))) {
         const chapterTitle = chapter.title.value.trim();
 
-        const createdChapter = await ExtAPI.bookUpload2(createdBook.id, {
+        const createdChapter = await BookUploadAPI.uploadChapter({
+          book_id: createdBook.id,
           title: chapterTitle,
           chapter_number: idx + 1,
         });
@@ -213,7 +214,8 @@ const RegisterNewBook = () => {
 
           const pageContent = content.slice(0, response.visibleContentLength);
 
-          await ExtAPI.bookUpload3(createdBook.id, {
+          await BookUploadAPI.uploadPage({
+            book_id: createdBook.id,
             chapter_id: createdChapter.id,
             content: TextProcessor.fromText(pageContent).trim().result(),
             page_number: pageNumber++,
@@ -236,7 +238,7 @@ const RegisterNewBook = () => {
         }
       }
 
-      await ExtAPI.bookUpload4(createdBook.id);
+      await BookUploadAPI.finishUpload(createdBook.id);
 
       alert(
         "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
@@ -655,5 +657,3 @@ const BookPaginatorDialog = ({
     </>
   );
 };
-
-export default RegisterNewBook;

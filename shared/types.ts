@@ -54,7 +54,7 @@ export interface BookChapter {
 }
 
 export interface BookChapterUpload
-  extends Pick<BookChapter, "chapter_number" | "title"> {}
+  extends Pick<BookChapter, "book_id" | "chapter_number" | "title"> {}
 
 export interface BookPage {
   id: string;
@@ -73,13 +73,17 @@ export interface BookPage {
 }
 
 export interface BookPageSchema extends Omit<BookPage, "sentence_boundaries"> {
-  sentence_boundaries: string; // Stored as JSON string in the database
+  sentence_boundaries: string;
 }
 
 export interface BookPageUpload
   extends Pick<
     BookPage,
-    "chapter_id" | "content" | "page_number" | "page_transition_type"
+    | "book_id"
+    | "chapter_id"
+    | "content"
+    | "page_number"
+    | "page_transition_type"
   > {}
 
 export interface BookPageDetail extends BookPage {
@@ -102,3 +106,8 @@ export type NLPPreProcessRes =
       };
     }
   | { success: false; book_page_id: string };
+
+export type BotMessage = {
+  id: string;
+  message: string;
+};

@@ -96,25 +96,27 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/conversate/:id/:offset", async (req, res) => {
+  container.mainServer.post("/api/agent/assistant", async (req, res) => {
     try {
-      const { id, offset } = req.params;
-
-      const { query } = req.body;
-      if (!query) {
-        return res.status(400).json({ error: "Query is required" });
+      const { book_id, offset, query } = req.body;
+      if (!book_id || !offset || !query) {
+        return res
+          .status(400)
+          .json({ error: "book_id, offset, and query are required" });
       }
-      if (typeof query !== "string") {
+      if (
+        typeof book_id !== "string" ||
+        typeof offset !== "number" ||
+        typeof query !== "string"
+      ) {
         return res.status(400).json({ error: "Query must be a string" });
       }
 
-      const response = await container.chatBotService.conversate(
+      const response = await container.assistantAgentService.conversate(
         query,
-        id,
-        parseInt(offset, 10),
+        book_id,
+        offset,
       );
-
-      console.log(response);
 
       res.status(200).json(response);
     } catch (error) {
@@ -123,7 +125,7 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book_upload/1", async (req, res) => {
+  container.mainServer.post("/api/book_upload/book", async (req, res) => {
     try {
       const { title, author, language } = req.body as BookUpload;
 
@@ -140,7 +142,7 @@ const main = async () => {
           .status(400)
           .json({ error: `Language must be one of ${LANGUAGES.join(", ")}` });
       }
-      const book = await container.bookUploadService.bookUpload1(
+      const book = await container.bookUploadService.uploadBook(
         title,
         author,
         language,
@@ -151,23 +153,26 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book_upload/2/:id", async (req, res) => {
-    const { id } = req.params;
-    const { chapter_number, title } = req.body as BookChapterUpload;
+  container.mainServer.post("/api/book_upload/chapter", async (req, res) => {
+    const { book_id, chapter_number, title } = req.body as BookChapterUpload;
 
-    if (!chapter_number || !title) {
+    if (!book_id || !chapter_number || !title) {
       return res
         .status(400)
         .json({ error: "Chapter number and title are required" });
     }
 
-    if (typeof chapter_number !== "number" || typeof title !== "string") {
+    if (
+      typeof book_id !== "string" ||
+      typeof chapter_number !== "number" ||
+      typeof title !== "string"
+    ) {
       return res.status(400).json({ error: "Invalid chapter data" });
     }
 
     try {
-      const chapter = await container.bookUploadService.bookUpload2(
-        id,
+      const chapter = await container.bookUploadService.uploadChapter(
+        book_id,
         chapter_number,
         title,
       );
@@ -177,12 +182,17 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book_upload/3/:id", async (req, res) => {
-    const { id } = req.params;
-    const { chapter_id, content, page_number, page_transition_type } =
+  container.mainServer.post("/api/book_upload/page", async (req, res) => {
+    const { book_id, chapter_id, content, page_number, page_transition_type } =
       req.body as BookPageUpload;
 
-    if (!chapter_id || !content || !page_number || !page_transition_type) {
+    if (
+      !book_id ||
+      !chapter_id ||
+      !content ||
+      !page_number ||
+      !page_transition_type
+    ) {
       return res.status(400).json({
         error:
           "chapter_id, content, page_number and paragraph_continues are required",
@@ -190,6 +200,7 @@ const main = async () => {
     }
 
     if (
+      typeof book_id !== "string" ||
       typeof chapter_id !== "string" ||
       typeof content !== "string" ||
       typeof page_number !== "number" ||
@@ -199,8 +210,8 @@ const main = async () => {
     }
 
     try {
-      const bookPage = await container.bookUploadService.bookUpload3(
-        id,
+      const bookPage = await container.bookUploadService.uploadPage(
+        book_id,
         chapter_id,
         page_number,
         content,
@@ -212,11 +223,11 @@ const main = async () => {
     }
   });
 
-  container.mainServer.post("/api/book_upload/4/:id", async (req, res) => {
+  container.mainServer.post("/api/book_upload/finish/:id", async (req, res) => {
     try {
       const { id } = req.params;
 
-      const book = await container.bookUploadService.bookUpload4(id);
+      const book = await container.bookUploadService.finishUpload(id);
       if (!book) {
         return res.status(404).json({ error: "Book not found" });
       }

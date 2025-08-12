@@ -2,10 +2,10 @@ import { BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AutoStories, CloudUpload, LibraryBooks } from "@mui/icons-material";
-import BookList from "./components/BookList";
-import Layout from "./components/layout";
-import RegisterNewBook from "./components/admin/RegisterNewBook";
-import ManageBooks from "./components/admin/ManageBooks";
+import { BookListView } from "./components/BookList";
+import { Layout } from "./components/layout";
+import { RegisterNewBook } from "./components/admin/RegisterNewBook";
+import { ManageBooks } from "./components/admin/ManageBooks";
 import { theme } from "./theme";
 
 const pages = [
@@ -13,7 +13,7 @@ const pages = [
     title: "Read Book",
     icon: <AutoStories />,
     url: "/books",
-    component: BookList,
+    component: BookListView,
   },
   {
     title: "Register Book",

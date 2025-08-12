@@ -41,7 +41,7 @@ export class BookUploadService {
     this.bookContentVectorCollection = bookContentVectorCollection;
   }
 
-  async bookUpload1(
+  async uploadBook(
     title: string,
     author: string,
     language: Language,
@@ -68,7 +68,7 @@ export class BookUploadService {
     return books;
   }
 
-  async bookUpload2(
+  async uploadChapter(
     bookId: string,
     chapterNumber: number,
     title: string,
@@ -91,7 +91,7 @@ export class BookUploadService {
     return chapters;
   }
 
-  async bookUpload3(
+  async uploadPage(
     bookId: string,
     chapterId: string,
     pageNumber: number,
@@ -311,7 +311,7 @@ export class BookUploadService {
     }
   }
 
-  async bookUpload4(bookId: string): Promise<Book> {
+  async finishUpload(bookId: string): Promise<Book> {
     const totalPages = await this.bookPagesTable.count({ book_id: bookId });
     const updatedAt = new Date().toISOString();
 

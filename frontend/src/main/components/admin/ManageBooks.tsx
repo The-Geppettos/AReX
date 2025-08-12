@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BookList } from "@shared/types";
-import ExtAPI from "../../../api/extApi";
+import { BookManageAPI } from "@src/api/bookManage";
 import {
   Box,
   Container,
@@ -21,7 +21,7 @@ import { AutoStories, CloudDownload, CloudUpload } from "@mui/icons-material";
 
 const ROWS_PAGE_OPTIONS = [5, 10, 25];
 
-const ManageBooks = () => {
+export const ManageBooks = () => {
   const [bookList, setBookList] = useState<BookList>({
     books: [],
     offset: 0,
@@ -35,7 +35,7 @@ const ManageBooks = () => {
     try {
       const offset = page * rowsPerPage;
       const limit = rowsPerPage;
-      const bookList = await ExtAPI.getAllBookList(offset, limit);
+      const bookList = await BookManageAPI.getBookList(offset, limit);
       setBookList(bookList);
     } catch (err) {
       console.error("Error fetching books:", err);
@@ -97,7 +97,7 @@ const ManageBooks = () => {
                           );
                           if (!confirm) return;
                           try {
-                            await ExtAPI.publishBook(book.id);
+                            await BookManageAPI.publishBook(book.id);
                             alert("Book published successfully");
                             await fetchBooks(rowsPerPage, page);
                           } catch (error) {
@@ -119,7 +119,7 @@ const ManageBooks = () => {
                           );
                           if (!confirm) return;
                           try {
-                            await ExtAPI.unPublishBook(book.id);
+                            await BookManageAPI.unPublishBook(book.id);
                             alert("Book unpublished successfully");
                             await fetchBooks(rowsPerPage, page);
                           } catch (error) {
@@ -156,5 +156,3 @@ const ManageBooks = () => {
     </Container>
   );
 };
-
-export default ManageBooks;

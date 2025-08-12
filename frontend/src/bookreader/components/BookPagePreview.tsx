@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import BookPageView from "./BookPageView";
-import { BOOK_PAGE_WIDTH } from "./const";
+import { BookPageView } from "./pageView";
+import { BOOK_PAGE_WIDTH } from "../const";
 
 type PreviewMessage = {
   content: string | null;
@@ -11,7 +11,7 @@ type PreviewMessage = {
   token: string;
 };
 
-const BookPagePreview = () => {
+export const BookPagePreview = () => {
   const [previewMessage, setPreviewMessage] = useState<PreviewMessage | null>(
     null,
   );
@@ -153,5 +153,3 @@ const BookPagePreview = () => {
     />
   );
 };
-
-export default BookPagePreview;

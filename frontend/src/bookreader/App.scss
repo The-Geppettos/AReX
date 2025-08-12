@@ -1,8 +1,16 @@
-@use "sass:math";
+@use "./components/modal";
+@use "./components/pageView";
+@use "./components/reader";
 
-$book-page-width: 630px;
-$book-page-height: 891px;
-$book-page-aspect-ratio: math.div($book-page-width, $book-page-height);
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 
 * {
   box-sizing: border-box;
@@ -34,56 +42,4 @@ body {
 #root {
   width: 100%;
   height: 100%;
-}
-
-.book-reader {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  .book-page-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  &[data-orientation="portrait"] .book-page-wrapper {
-    flex-direction: column;
-  }
-  &[data-orientation="landscape"] .book-page-wrapper {
-    flex-direction: row;
-  }
-}
-
-.book-page-view {
-  position: relative;
-  aspect-ratio: $book-page-aspect-ratio;
-  .book-page-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    overflow: hidden;
-    transform-origin: top left;
-    width: $book-page-width;
-    height: $book-page-height;
-    padding: 20px;
-
-    .book-chapter-title {
-      display: block;
-      font-size: 32px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .book-content-text {
-      white-space: pre-line;
-      font-size: 24px;
-      line-height: 1.5;
-      margin-top: 1em;
-      margin-bottom: 1em;
-      &.indented {
-        text-indent: 1em;
-      }
-    }
-  }
 }

@@ -25,7 +25,7 @@ type LayoutProps = {
   }>;
 };
 
-const Layout = ({ pages }: LayoutProps) => {
+export const Layout = ({ pages }: LayoutProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -106,5 +106,3 @@ const Layout = ({ pages }: LayoutProps) => {
     </>
   );
 };
-
-export default Layout;

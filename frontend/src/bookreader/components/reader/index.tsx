@@ -1,16 +1,24 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Book, BookPageDetail } from "@shared/types";
-import ExtAPI from "../api/extApi";
-import BookPageView from "./BookPageView";
-import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "./const";
-import { indentFirstLine } from "../lib";
-import { Helper } from "./helper";
+import { ReadBookAPI } from "@src/api/readBook";
+import { BookPageView } from "../pageView";
+import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "../../const";
+import { indentFirstLine } from "@src/lib";
+import { ControlOverlay } from "./ControlOverlay";
 
 interface BookReaderProps {
   bookId: string;
 }
 
-const BookReader = ({ bookId }: BookReaderProps) => {
+const TROTTLE_TIME = 100;
+
+export const BookReader = ({ bookId }: BookReaderProps) => {
   const readerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
   const headerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
   const footerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
@@ -22,9 +30,13 @@ const BookReader = ({ bookId }: BookReaderProps) => {
   const [showSinglePage, setShowSinglePage] = useState<boolean>(false);
   const [pageWidth, setPageWidth] = useState<number | null>(null);
 
+  const [openControlOverlay, setOpenControlOverlay] = useState<boolean>(false);
+
   const isLeftPage = useMemo(() => {
     return pageNumber !== null && pageNumber % 2 === 1;
   }, [pageNumber]);
+
+  const resizeThrottleOccupied = useRef<boolean>(false);
 
   const lastPage = useMemo(() => {
     if (!bookInfo) return 0;
@@ -56,10 +68,51 @@ const BookReader = ({ bookId }: BookReaderProps) => {
     }
   }, [bookInfo, pageNumber, showSinglePage, isLeftPage]);
 
+  const showPrevPageControl = useMemo(() => {
+    if (!pageNumber) return false;
+    return showSinglePage ? pageNumber > 1 : pageNumber > 2;
+  }, [pageNumber, showSinglePage]);
+
+  const prevPage = useCallback(() => {
+    if (!pageNumber) return;
+    if (showSinglePage) {
+      if (pageNumber <= 1) return;
+      setPageNumber(pageNumber - 1);
+    } else {
+      if (pageNumber <= 2) return;
+      if (isLeftPage) {
+        setPageNumber(pageNumber - 2);
+      } else {
+        setPageNumber(pageNumber - 3);
+      }
+    }
+  }, [pageNumber, showSinglePage, isLeftPage]);
+
+  const showNextPageControl = useMemo(() => {
+    if (!pageNumber) return false;
+    return pageNumber < lastPage;
+  }, [pageNumber, lastPage]);
+
+  const nextPage = useCallback(() => {
+    if (!pageNumber) return;
+    if (pageNumber >= lastPage) return;
+
+    if (showSinglePage) {
+      setPageNumber(pageNumber + 1);
+      return;
+    } else {
+      if (isLeftPage) {
+        setPageNumber(pageNumber + 2);
+      } else {
+        setPageNumber(pageNumber + 3);
+      }
+    }
+  }, [pageNumber, lastPage, showSinglePage, isLeftPage]);
+
   useEffect(() => {
     const fetchBookData = async () => {
       try {
-        const bookInfo = await ExtAPI.getBookInfo(bookId);
+        const bookInfo = await ReadBookAPI.getBookInfo(bookId);
         setBookInfo(bookInfo);
         setPageNumber(1);
       } catch (error) {
@@ -84,7 +137,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
             console.error("Page number out of bounds");
             return;
           }
-          const leftPageContent = await ExtAPI.getBookPage(
+          const leftPageContent = await ReadBookAPI.getBookPage(
             bookId,
             leftPageNumber,
           );
@@ -92,7 +145,7 @@ const BookReader = ({ bookId }: BookReaderProps) => {
 
           const rightPageNumber = leftPageNumber + 1;
           if (rightPageNumber <= bookInfo.total_pages) {
-            const rightPageContent = await ExtAPI.getBookPage(
+            const rightPageContent = await ReadBookAPI.getBookPage(
               bookId,
               rightPageNumber,
             );
@@ -110,60 +163,71 @@ const BookReader = ({ bookId }: BookReaderProps) => {
 
   useEffect(() => {
     const handleResize = () => {
-      const readerWidth = readerRef.current.clientWidth;
-      const readerHeight = readerRef.current.clientHeight;
+      if (resizeThrottleOccupied.current) return;
 
-      const headerHeight = headerRef.current.offsetHeight;
-      const footerHeight = footerRef.current.offsetHeight;
+      resizeThrottleOccupied.current = true;
 
-      const availableWidth = readerWidth;
-      const avaliableHeight = readerHeight - headerHeight - footerHeight;
+      setTimeout(() => {
+        const readerWidth = readerRef.current.clientWidth;
+        const readerHeight = readerRef.current.clientHeight;
 
-      if (availableWidth === 0 || avaliableHeight === 0) {
-        return; // Avoid division by zero
-      }
+        const headerHeight = headerRef.current.offsetHeight;
+        const footerHeight = footerRef.current.offsetHeight;
 
-      const aspectRatio = availableWidth / avaliableHeight;
+        const availableWidth = readerWidth;
+        const avaliableHeight = readerHeight - headerHeight - footerHeight;
 
-      if (aspectRatio > BREAK_ASPECT_RATIO) {
-        readerRef.current.setAttribute("data-orientation", "landscape");
-
-        if (aspectRatio > 2 * SINGLE_PAGE_ASPECT_RATIO) {
-          setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
-        } else {
-          setPageWidth(availableWidth / 2);
+        if (availableWidth === 0 || avaliableHeight === 0) {
+          return; // Avoid division by zero
         }
-        setShowSinglePage(false);
-      } else {
-        readerRef.current.setAttribute("data-orientation", "portrait");
 
-        if (aspectRatio > SINGLE_PAGE_ASPECT_RATIO) {
-          setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
+        const aspectRatio = availableWidth / avaliableHeight;
+
+        if (aspectRatio > BREAK_ASPECT_RATIO) {
+          readerRef.current.setAttribute("data-orientation", "landscape");
+
+          if (aspectRatio > 2 * SINGLE_PAGE_ASPECT_RATIO) {
+            setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
+          } else {
+            setPageWidth(availableWidth / 2);
+          }
+          setShowSinglePage(false);
         } else {
-          setPageWidth(availableWidth);
+          readerRef.current.setAttribute("data-orientation", "portrait");
+
+          if (aspectRatio > SINGLE_PAGE_ASPECT_RATIO) {
+            setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
+          } else {
+            setPageWidth(availableWidth);
+          }
+          setShowSinglePage(true);
         }
-        setShowSinglePage(true);
-      }
+
+        resizeThrottleOccupied.current = false;
+      }, TROTTLE_TIME);
     };
 
     handleResize();
 
     const resizeObserver = new ResizeObserver(handleResize);
     resizeObserver.observe(readerRef.current);
+    resizeObserver.observe(headerRef.current);
+    resizeObserver.observe(footerRef.current);
     return () => {
       resizeObserver.disconnect();
     };
   }, []);
 
   return (
-    <div ref={readerRef} className="book-reader">
+    <div
+      ref={readerRef}
+      className="book-reader"
+      onClick={() => {
+        setOpenControlOverlay((prev) => !prev);
+      }}
+    >
       <div ref={headerRef} className="book-reader-header">
-        {bookInfo && (
-          <Helper
-            bookId={bookInfo.id}
-            offset={rightPage?.offset_end || leftPage?.offset_end || 0}
-          />
-        )}
+        Header
       </div>
       {pageWidth && (
         <div className="book-page-wrapper">
@@ -210,53 +274,24 @@ const BookReader = ({ bookId }: BookReaderProps) => {
         </div>
       )}
       <div ref={footerRef} className="book-reader-footer">
-        <button
-          onClick={() => {
-            if (!pageNumber) return;
-            if (showSinglePage) {
-              if (pageNumber <= 1) return;
-              setPageNumber(pageNumber - 1);
-            } else {
-              if (pageNumber <= 2) return;
-              if (isLeftPage) {
-                setPageNumber(pageNumber - 2);
-              } else {
-                setPageNumber(pageNumber - 3);
-              }
-            }
-          }}
-          disabled={
-            !pageNumber || (showSinglePage ? pageNumber <= 1 : pageNumber <= 2)
-          }
-        >
-          Previous
-        </button>
         <span>
           Page {currentPageStr} of {bookInfo?.total_pages || 0}
         </span>
-        <button
-          onClick={() => {
-            if (!pageNumber) return;
-            if (pageNumber >= lastPage) return;
-
-            if (showSinglePage) {
-              setPageNumber(pageNumber + 1);
-              return;
-            } else {
-              if (isLeftPage) {
-                setPageNumber(pageNumber + 2);
-              } else {
-                setPageNumber(pageNumber + 3);
-              }
-            }
-          }}
-          disabled={!pageNumber || pageNumber >= lastPage}
-        >
-          Next
-        </button>
       </div>
+      {openControlOverlay && (
+        <ControlOverlay
+          showPrevPageControl={showPrevPageControl}
+          showNextPageControl={showNextPageControl}
+          bookId={bookId}
+          offset={
+            showSinglePage && isLeftPage
+              ? leftPage?.offset_end || 0
+              : rightPage?.offset_end || leftPage?.offset_end || 0
+          }
+          prevPage={prevPage}
+          nextPage={nextPage}
+        />
+      )}
     </div>
   );
 };
-
-export default BookReader;

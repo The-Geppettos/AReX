@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { BOOK_PAGE_WIDTH } from "./const";
-import { TextProcessor } from "../lib";
+import { BOOK_PAGE_WIDTH } from "../../const";
+import { TextProcessor } from "@src/lib";
 
 interface BookPageViewProps {
   chapterTitle: string | null;
@@ -10,7 +10,7 @@ interface BookPageViewProps {
   ref?: React.RefObject<HTMLDivElement>;
 }
 
-const BookPageView = ({
+export const BookPageView = ({
   content,
   chapterTitle,
   firstLineIndent,
@@ -59,5 +59,3 @@ const BookPageView = ({
     </div>
   );
 };
-
-export default BookPageView;
