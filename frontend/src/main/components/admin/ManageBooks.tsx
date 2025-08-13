@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { BookList } from "@shared/types";
+import type { BookList } from "@shared/book";
 import { BookManageAPI } from "@src/api/bookManage";
 import {
   Box,

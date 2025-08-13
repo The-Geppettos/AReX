@@ -1,4 +1,4 @@
-import type { Book, BookList } from "@shared/types";
+import type { Book, BookList } from "@shared/book";
 import type { BooksTable } from "@src/component/maindb/tables/books";
 
 export class BookService {

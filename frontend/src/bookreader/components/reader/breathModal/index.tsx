@@ -1,5 +1,6 @@
 import { ReadBookAPI } from "@src/api/readBook";
 import { useBreathContext } from "./context";
+import { useEffect, useRef } from "react";
 
 export const BreathModalContent = ({
   bookId,
@@ -8,8 +9,21 @@ export const BreathModalContent = ({
   bookId: string;
   offset: number;
 }) => {
-  const { assMessageInput, setAssMessageInput, assMessages, setAssMessages } =
-    useBreathContext();
+  const {
+    assChatId,
+    setAssChatId,
+    assMessageInput,
+    setAssMessageInput,
+    assMessages,
+    setAssMessages,
+  } = useBreathContext();
+
+  const messageContainerRef = useRef<HTMLDivElement>({} as HTMLDivElement);
+
+  useEffect(() => {
+    messageContainerRef.current.scrollTop =
+      messageContainerRef.current.scrollHeight;
+  }, [assMessages]);
 
   return (
     <form
@@ -20,16 +34,18 @@ export const BreathModalContent = ({
           return;
         }
         setAssMessageInput("");
-        setAssMessages((prev) => [...prev, { message, role: "user" }]);
+        setAssMessages((prev) => [...prev, { content: message, role: "user" }]);
         try {
-          const resMessage = await ReadBookAPI.askAssistant(
-            message,
-            bookId,
-            offset,
-          );
+          const resMessage = await ReadBookAPI.askAssistant({
+            message: message,
+            book_id: bookId,
+            offset: offset,
+            id: assChatId,
+          });
+          setAssChatId(resMessage.id);
           setAssMessages((prev) => [
             ...prev,
-            { message: resMessage.message, role: "assistant" },
+            { content: resMessage.message, role: "assistant" },
           ]);
         } catch (error) {
           console.error(error);
@@ -37,10 +53,12 @@ export const BreathModalContent = ({
       }}
     >
       <div className="chat">
-        <div className="chat-messages">
+        <div className="chat-message-container" ref={messageContainerRef}>
           {assMessages.map((message, index) => (
-            <div className={`message-container ${message.role}`} key={index}>
-              <div className={`message ${message.role}`}>{message.message}</div>
+            <div className={`chat-message ${message.role}`} key={index}>
+              <div className={`chat-message-content ${message.role}`}>
+                {message.content}
+              </div>
             </div>
           ))}
         </div>

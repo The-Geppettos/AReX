@@ -26,6 +26,7 @@ import {
   PostProcessConsumer,
   PostProcessProducer,
 } from "@src/component/rabbitmq/queues/postProcess";
+import { ChatHistoryTable } from "./component/maindb/tables/chatHistory";
 
 dotenv.config({
   path: "../.env",
@@ -72,6 +73,7 @@ const bookPagesTable = new BookPagesTable(
   booksTable,
   bookChaptersTable,
 );
+const chatHistoryTable = new ChatHistoryTable(mainDb);
 
 export const chromaDb = new ChromaDB(
   chromadb_host,
@@ -103,6 +105,7 @@ const assistantAgentService = new AssistantAgentService(
   openaiApiKey,
   bookContentVectorCollection,
   booksTable,
+  chatHistoryTable,
 );
 
 export default {

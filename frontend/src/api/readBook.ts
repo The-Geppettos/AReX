@@ -1,4 +1,6 @@
-import type { Book, BookList, BookPageDetail, BotMessage } from "@shared/types";
+import type { Book, BookList, BookPageDetail } from "@shared/book";
+import type { BotMessage, ChatMessage, UserMessage } from "@shared/chat";
+
 import axios from "axios";
 
 const axiosInstance = axios.create();
@@ -44,16 +46,16 @@ export class ReadBookAPI {
     return response.data;
   }
 
-  static async askAssistant(
-    query: string,
-    bookId: string,
-    offset: number,
-  ): Promise<BotMessage> {
-    const response = await axiosInstance.post(`/api/agent/assistant`, {
-      book_id: bookId,
-      offset,
-      query,
-    });
+  static async getChatHistory(id: string): Promise<ChatMessage[]> {
+    const response = await axiosInstance.get(`/api/agent/hist/${id}`);
+    return response.data;
+  }
+
+  static async askAssistant(userMessage: UserMessage): Promise<BotMessage> {
+    const response = await axiosInstance.post(
+      `/api/agent/assistant`,
+      userMessage,
+    );
     return response.data;
   }
 }

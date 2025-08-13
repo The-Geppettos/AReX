@@ -1,4 +1,4 @@
-import type { Book, BookList } from "@shared/types";
+import type { Book, BookList } from "@shared/book";
 import axios from "axios";
 
 const axiosInstance = axios.create();

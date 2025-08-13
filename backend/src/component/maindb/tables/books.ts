@@ -1,7 +1,7 @@
-import type { Book, BookList } from "@shared/types";
+import type { Book, BookList } from "@shared/book";
 import type { MainDB } from "..";
 
-import { BOOK_STATUS } from "@shared/types";
+import { BOOK_STATUS } from "@shared/book";
 import { Table } from "./abstract";
 
 export class BooksTable extends Table<Book> {

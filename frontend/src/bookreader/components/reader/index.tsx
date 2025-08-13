@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import type { Book, BookPageDetail } from "@shared/types";
+import type { Book, BookPageDetail } from "@shared/book";
 import { ReadBookAPI } from "@src/api/readBook";
 import { BookPageView } from "../pageView";
 import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "../../const";

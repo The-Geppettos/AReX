@@ -1,3 +1,4 @@
+import type { ChatMessage } from "@shared/chat";
 import {
   createContext,
   useContext,
@@ -7,29 +8,31 @@ import {
   type SetStateAction,
 } from "react";
 
-type Message = {
-  message: string;
-  role: "user" | "assistant";
-};
-
 const BreathContext = createContext({
+  assChatId: "",
+  setAssChatId: ((_id: string) => {}) as Dispatch<SetStateAction<string>>,
+
   assMessageInput: "",
   setAssMessageInput: ((_message: string) => {}) as Dispatch<
     SetStateAction<string>
   >,
-  assMessages: [] as Message[],
-  setAssMessages: ((_messages: Message[]) => {}) as Dispatch<
-    SetStateAction<Message[]>
+
+  assMessages: [] as ChatMessage[],
+  setAssMessages: ((_messages: ChatMessage[]) => {}) as Dispatch<
+    SetStateAction<ChatMessage[]>
   >,
 });
 
 export const BreathProvider = ({ children }: PropsWithChildren<{}>) => {
+  const [assChatId, setAssChatId] = useState<string>("");
   const [assMessageInput, setAssMessageInput] = useState("");
-  const [assMessages, setAssMessages] = useState<Message[]>([]);
+  const [assMessages, setAssMessages] = useState<ChatMessage[]>([]);
 
   return (
     <BreathContext.Provider
       value={{
+        assChatId,
+        setAssChatId,
         assMessageInput,
         setAssMessageInput,
         assMessages,

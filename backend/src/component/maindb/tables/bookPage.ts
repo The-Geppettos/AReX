@@ -1,4 +1,4 @@
-import { PAGE_TRANSITION_TYPES, type BookPageSchema } from "@shared/types";
+import { PAGE_TRANSITION_TYPES, type BookPageSchema } from "@shared/book";
 import type { BooksTable } from "./books";
 import type { BookChaptersTable } from "./bookChapter";
 import type { MainDB } from "..";

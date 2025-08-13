@@ -1,11 +1,11 @@
 import {
   LANGUAGES,
-  NLPPreProcessRes,
   PAGE_TRANSITION_TYPES,
   type BookChapterUpload,
   type BookUpload,
   type BookPageUpload,
-} from "@shared/types";
+} from "@shared/book";
+import { NLPPreProcessRes } from "@shared/messageBroker";
 
 import container from "@src/container";
 
@@ -96,10 +96,24 @@ const main = async () => {
     }
   });
 
+  container.mainServer.get("/api/agent/hist/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const chatHistory =
+        await container.assistantAgentService.getChatHistory(id);
+
+      res.status(200).json(chatHistory);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to fetch chat history" });
+    }
+  });
+
   container.mainServer.post("/api/agent/assistant", async (req, res) => {
     try {
-      const { book_id, offset, query } = req.body;
-      if (!book_id || !offset || !query) {
+      const { book_id, offset, message, id } = req.body;
+      if (!book_id || !offset || !message) {
         return res
           .status(400)
           .json({ error: "book_id, offset, and query are required" });
@@ -107,15 +121,19 @@ const main = async () => {
       if (
         typeof book_id !== "string" ||
         typeof offset !== "number" ||
-        typeof query !== "string"
+        typeof message !== "string"
       ) {
         return res.status(400).json({ error: "Query must be a string" });
       }
+      if (id && typeof id !== "string") {
+        return res.status(400).json({ error: "ID must be a string" });
+      }
 
       const response = await container.assistantAgentService.conversate(
-        query,
+        message,
         book_id,
         offset,
+        id,
       );
 
       res.status(200).json(response);

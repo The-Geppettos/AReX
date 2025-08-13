@@ -1,4 +1,4 @@
-import type { BookChapter } from "@shared/types";
+import type { BookChapter } from "@shared/book";
 import type { MainDB } from "..";
 import type { BooksTable } from "./books";
 

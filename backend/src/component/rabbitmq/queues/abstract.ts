@@ -1,4 +1,4 @@
-import type { ConsumeMessage, Options } from "amqplib";
+import type { Options } from "amqplib";
 import type { ConsumeCallback, RabbitMQ } from "..";
 
 export abstract class Queue {

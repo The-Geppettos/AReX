@@ -5,7 +5,7 @@ import type {
   BookUpload,
   BookPageUpload,
   BookPageDetail,
-} from "@shared/types";
+} from "@shared/book";
 import axios from "axios";
 
 const axiosInstance = axios.create();

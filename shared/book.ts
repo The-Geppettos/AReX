@@ -89,25 +89,3 @@ export interface BookPageUpload
 export interface BookPageDetail extends BookPage {
   chapter_title: string | null;
 }
-
-export interface NLPPreProcessReq {
-  book_page_id: string;
-  content: string;
-  prev_content: string | null;
-  language: Language;
-}
-
-export type NLPPreProcessRes =
-  | {
-      success: true;
-      book_page_id: string;
-      result: {
-        sentence_boundaries: [number, number][];
-      };
-    }
-  | { success: false; book_page_id: string };
-
-export type BotMessage = {
-  id: string;
-  message: string;
-};

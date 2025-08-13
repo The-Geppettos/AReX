@@ -6,7 +6,7 @@ import type {
   BookPage,
   Language,
   PageTransitionType,
-} from "@shared/types";
+} from "@shared/book";
 import type { NLPPreProcessProducer } from "@src/component/rabbitmq/queues/nlpPreProcess";
 import type { BooksTable } from "@src/component/maindb/tables/books";
 import type { PostProcessProducer } from "@src/component/rabbitmq/queues/postProcess";

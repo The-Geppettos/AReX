@@ -1,6 +1,8 @@
+import type { PostProcess } from "@shared/messageBroker";
+
 import { ProducerQueue, ConsumerQueue } from "./abstract";
 
-export class PostProcessProducer extends ProducerQueue<{ book_id: string }> {
+export class PostProcessProducer extends ProducerQueue<PostProcess> {
   queueName = "post-process";
 }
 

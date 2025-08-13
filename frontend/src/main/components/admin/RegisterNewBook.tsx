@@ -36,7 +36,7 @@ import {
   LANGUAGES,
   type BookPage,
   type Language,
-} from "@shared/types";
+} from "@shared/book";
 import { indentFirstLine, TextProcessor } from "../../../lib";
 
 type BookPagenateResponse = {
