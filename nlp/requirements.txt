@@ -2,6 +2,3 @@ python-dotenv
 pika
 nltk
 kss
-openai
-psycopg2-binary
-chromadb-client
