@@ -344,9 +344,11 @@ export class BookUploadService {
 
   async postProcess(bookId: string) {
     await this.booksTable.updateById(bookId, {
-      status: "preprocessing",
+      status: "postprocessing",
       updated_at: new Date().toISOString(),
     });
+
+    await this.bookContentVectorCollection.deleteAllByBookId(bookId);
 
     const book = await this.booksTable.getById(bookId);
 

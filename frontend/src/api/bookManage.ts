@@ -1,7 +1,5 @@
 import type { Book, BookList } from "@shared/book";
-import axios from "axios";
-
-const axiosInstance = axios.create();
+import { axiosInstance } from "./axios";
 
 export class BookManageAPI {
   static async getBookList(offset: number, limit: number): Promise<BookList> {

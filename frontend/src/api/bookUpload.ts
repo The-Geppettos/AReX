@@ -6,9 +6,7 @@ import type {
   BookPageUpload,
   BookPageDetail,
 } from "@shared/book";
-import axios from "axios";
-
-const axiosInstance = axios.create();
+import { axiosInstance } from "./axios";
 
 export class BookUploadAPI {
   static async uploadBook(bookInfo: BookUpload): Promise<Book> {

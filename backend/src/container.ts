@@ -16,6 +16,7 @@ import { BookService } from "@src/services/book";
 import { BookPageService } from "@src/services/bookPage";
 import { BookUploadService } from "@src/services/bookUpload";
 import { AssistantAgentService } from "@src/services/agents/assistant";
+import { CharacterAgentService } from "@src/services/agents/character";
 
 import { RabbitMQ } from "@src/component/rabbitmq";
 import {
@@ -54,7 +55,11 @@ const openaiApiKey = process.env.OPENAI_API_KEY || "";
 const rbmq_host = process.env.RABBITMQ_HOST || "localhost";
 const rbmq_port = process.env.RABBITMQ_PORT || "5672";
 
-// -- Initialize Instances --
+/*
+ * --- Initialization ---
+ * This section initializes the main components of the application.
+ * Dependencies are injected into each component to ensure they can interact with each other.
+ */
 
 const mainServer = new MainServer(main_server_port);
 
@@ -73,7 +78,7 @@ const bookPagesTable = new BookPagesTable(
   booksTable,
   bookChaptersTable,
 );
-const chatHistoryTable = new ChatHistoryTable(mainDb);
+const chatHistoryTable = new ChatHistoryTable(mainDb, booksTable);
 
 export const chromaDb = new ChromaDB(
   chromadb_host,
@@ -107,6 +112,12 @@ const assistantAgentService = new AssistantAgentService(
   booksTable,
   chatHistoryTable,
 );
+const characterAgentService = new CharacterAgentService(
+  openaiApiKey,
+  bookContentVectorCollection,
+  booksTable,
+  chatHistoryTable,
+);
 
 export default {
   mainServer,
@@ -119,4 +130,5 @@ export default {
   bookPageService,
   bookUploadService,
   assistantAgentService,
+  characterAgentService,
 };

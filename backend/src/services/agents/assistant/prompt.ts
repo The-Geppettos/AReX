@@ -34,13 +34,16 @@ export const getSearchQueryRewritePrompts = (
   }
 };
 
-export const getMainPrompts = (
+export const getAnswerPrompts = (
   language: Language,
   bookTitle: string,
   userQuery: string,
   searchQuery: string,
   searchReqult: string,
-) => {
+): {
+  systemPrompt: string;
+  userQueries: string[];
+} => {
   switch (language) {
     case "ko":
       return {
@@ -50,9 +53,8 @@ export const getMainPrompts = (
           "사용자는 질문과 함께 책 내용을 검색했습니다.",
           "검색결과 만을 바탕으로 답변해주세요.",
           "검색결과는 현재 사용자가 읽은 범위 내에서만 제공됩니다.",
-          "질문을 답하기에 검색결과가 충분하지 않을 수 있습니다.",
-          "이는 책에 없는 내용이거나 아직 읽지 않은 내용일 수 있습니다.",
-          "없는 내용에 대해서는 답변하지 말고, 정보가 부족하다고 설명해주세요.",
+          "검색결과와 질문의 내용이 많이 차이나는 경우, 책에 없는 내용이거나 아직 읽지 않은 내용일 수 있습니다.",
+          "이 경우, 검색결과는 무시하고 정보가 부족하다고 설명해주세요.",
         ].join("\n"),
         userQueries: [
           `사용자 질문: ${userQuery}`,
@@ -67,9 +69,8 @@ export const getMainPrompts = (
           "The user has searched the book content with their question.",
           "Please answer based only on the search results.",
           "The search results are provided only within the range the user has read.",
-          "The search results may not be sufficient to answer the question.",
-          "This could be due to content not present in the book or content not yet read.",
-          "Do not answer about non-existent content, and explain that the information is insufficient.",
+          "If the search results and the question content differ significantly, it may be due to content not present in the book or content not yet read.",
+          "In this case, please ignore the search results and explain that the information is insufficient.",
         ].join("\n"),
         userQueries: [
           `User question: ${userQuery}`,

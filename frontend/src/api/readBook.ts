@@ -1,9 +1,5 @@
 import type { Book, BookList, BookPageDetail } from "@shared/book";
-import type { BotMessage, ChatMessage, UserMessage } from "@shared/chat";
-
-import axios from "axios";
-
-const axiosInstance = axios.create();
+import { axiosInstance } from "./axios";
 
 export class ReadBookAPI {
   static async getBookList(offset: number, limit: number): Promise<BookList> {
@@ -43,19 +39,6 @@ export class ReadBookAPI {
 
     cached.set(page_number, response.data);
 
-    return response.data;
-  }
-
-  static async getChatHistory(id: string): Promise<ChatMessage[]> {
-    const response = await axiosInstance.get(`/api/agent/hist/${id}`);
-    return response.data;
-  }
-
-  static async askAssistant(userMessage: UserMessage): Promise<BotMessage> {
-    const response = await axiosInstance.post(
-      `/api/agent/assistant`,
-      userMessage,
-    );
     return response.data;
   }
 }

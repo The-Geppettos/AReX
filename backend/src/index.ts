@@ -96,44 +96,64 @@ const main = async () => {
     }
   });
 
-  container.mainServer.get("/api/agent/hist/:id", async (req, res) => {
+  container.mainServer.post(
+    "/api/agent/assistant/conversate",
+    async (req, res) => {
+      try {
+        const { book_id, offset, message, chat_id } = req.body;
+        if (!book_id || !offset || !message) {
+          return res
+            .status(400)
+            .json({ error: "book_id, offset, and message are required" });
+        }
+        if (
+          typeof book_id !== "string" ||
+          typeof offset !== "number" ||
+          typeof message !== "string"
+        ) {
+          return res
+            .status(400)
+            .json({ error: "Parameter types are incorrect" });
+        }
+        if (chat_id && typeof chat_id !== "string") {
+          return res.status(400).json({ error: "chat_id must be a string" });
+        }
+
+        const response = await container.assistantAgentService.conversate(
+          message,
+          book_id,
+          offset,
+          chat_id,
+        );
+
+        res.status(200).json(response);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to send message" });
+      }
+    },
+  );
+
+  container.mainServer.post("/api/agent/character/check", async (req, res) => {
     try {
-      const { id } = req.params;
-
-      const chatHistory =
-        await container.assistantAgentService.getChatHistory(id);
-
-      res.status(200).json(chatHistory);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to fetch chat history" });
-    }
-  });
-
-  container.mainServer.post("/api/agent/assistant", async (req, res) => {
-    try {
-      const { book_id, offset, message, id } = req.body;
+      const { book_id, offset, message } = req.body;
       if (!book_id || !offset || !message) {
         return res
           .status(400)
-          .json({ error: "book_id, offset, and query are required" });
+          .json({ error: "book_id, offset, and message are required" });
       }
       if (
         typeof book_id !== "string" ||
         typeof offset !== "number" ||
         typeof message !== "string"
       ) {
-        return res.status(400).json({ error: "Query must be a string" });
-      }
-      if (id && typeof id !== "string") {
-        return res.status(400).json({ error: "ID must be a string" });
+        return res.status(400).json({ error: "Parameter types are incorrect" });
       }
 
-      const response = await container.assistantAgentService.conversate(
+      const response = await container.characterAgentService.checkCharacter(
         message,
         book_id,
         offset,
-        id,
       );
 
       res.status(200).json(response);
@@ -142,6 +162,40 @@ const main = async () => {
       res.status(500).json({ error: "Failed to send message" });
     }
   });
+
+  container.mainServer.post(
+    "/api/agent/character/conversate",
+    async (req, res) => {
+      try {
+        const { book_id, message, chat_id } = req.body;
+        if (!book_id || !message || !chat_id) {
+          return res
+            .status(400)
+            .json({ error: "book_id, chat_id, and message are required" });
+        }
+        if (
+          typeof book_id !== "string" ||
+          typeof chat_id !== "string" ||
+          typeof message !== "string"
+        ) {
+          return res
+            .status(400)
+            .json({ error: "Parameter types are incorrect" });
+        }
+
+        const response = await container.characterAgentService.conversate(
+          message,
+          book_id,
+          chat_id,
+        );
+
+        res.status(200).json(response);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to send message" });
+      }
+    },
+  );
 
   container.mainServer.post("/api/book_upload/book", async (req, res) => {
     try {

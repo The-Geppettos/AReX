@@ -3,7 +3,7 @@ import type { BooksTable } from "@src/component/maindb/tables/books";
 import type { ChatHistoryTable } from "@src/component/maindb/tables/chatHistory";
 
 import { OpenAI } from "openai";
-import { getSearchQueryRewritePrompts, getMainPrompts } from "./prompt";
+import { getSearchQueryRewritePrompts, getAnswerPrompts } from "./prompt";
 import { BotMessage, ChatMessage } from "@shared/chat";
 import { generateId } from "@src/util";
 
@@ -30,16 +30,6 @@ export class AssistantAgentService {
     });
   }
 
-  async getChatHistory(id: string) {
-    const chatHistory = await this.chatHistoryTable.getById(id);
-    if (!chatHistory) {
-      throw new Error(`Chat history with ID ${id} not found`);
-    }
-    const messages = JSON.parse(chatHistory.messages) as ChatMessage[];
-
-    return messages.filter((message) => message.role !== "system");
-  }
-
   async conversate(
     query: string,
     bookId: string,
@@ -57,7 +47,10 @@ export class AssistantAgentService {
     if (chatHistoryId) {
       try {
         const chatHistory = await this.chatHistoryTable.getById(chatHistoryId);
-        if (chatHistory) messagesStr = chatHistory.messages;
+        if (chatHistory) {
+          messagesStr = chatHistory.chat_messages;
+          offset = chatHistory.search_offset;
+        }
       } catch (error) {
         console.error(
           `Failed to retrieve chat history with ID ${chatHistoryId}:`,
@@ -88,7 +81,7 @@ export class AssistantAgentService {
 
     const rewrittenQuery = rewrite.choices[0].message.content;
 
-    if (!rewrittenQuery) {
+    if (rewrittenQuery === null) {
       throw new Error("No rewritten query returned from OpenAI API");
     }
 
@@ -102,13 +95,10 @@ export class AssistantAgentService {
     const searchResultStr = JSON.stringify(searchResult);
 
     const messages = messagesStr
-      ? (JSON.parse(messagesStr) as {
-          role: "user" | "assistant";
-          content: string;
-        }[])
+      ? (JSON.parse(messagesStr) as ChatMessage[])
       : [];
 
-    const mainPrompts = getMainPrompts(
+    const mainPrompts = getAnswerPrompts(
       book.language,
       book.title,
       query,
@@ -136,7 +126,7 @@ export class AssistantAgentService {
 
     const message = result.choices[0].message.content;
 
-    if (!message) {
+    if (message === null) {
       throw new Error("No message returned from OpenAI API");
     }
 
@@ -145,22 +135,27 @@ export class AssistantAgentService {
       content: message,
     });
 
-    const id = chatHistoryId || generateId();
+    const chatId = chatHistoryId || generateId();
 
     if (!chatHistoryId) {
       const newChatHistory = await this.chatHistoryTable.insert({
-        id,
-        messages: JSON.stringify(messages),
+        id: chatId,
+        book_id: bookId,
+        chat_title: "",
+        search_offset: offset,
+        chat_messages: JSON.stringify(messages),
+        chat_type: "assistant",
+        created_at: new Date().toISOString(),
       });
       if (!newChatHistory) {
         throw new Error("Failed to create chat history");
       }
     } else {
-      this.chatHistoryTable.updateById(id, {
-        messages: JSON.stringify(messages),
+      this.chatHistoryTable.updateById(chatId, {
+        chat_messages: JSON.stringify(messages),
       });
     }
 
-    return { message, id };
+    return { message, chat_id: chatId };
   }
 }

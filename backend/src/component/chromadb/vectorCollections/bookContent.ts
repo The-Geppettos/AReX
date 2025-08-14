@@ -43,4 +43,12 @@ export class BookContentVectorCollection extends VectorCollection {
     });
     return results.documents;
   }
+
+  async deleteAllByBookId(bookId: string): Promise<void> {
+    if (!this.collection) {
+      throw new Error("Collection is not initialized.");
+    }
+
+    await this.collection.delete({ where: { book_id: bookId } });
+  }
 }
