@@ -75,7 +75,8 @@ while not stop_triggered:
                     "result": analyze(
                         content=inputDict.get("content", ""),
                         prev_content=inputDict.get("prev_content"),
-                        language=inputDict.get("language", "en")
+                        language=inputDict.get("language", "en"),
+                        book_page_id=book_page_id
                     )
                 }
             except Exception as e:
