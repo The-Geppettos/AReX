@@ -1,6 +1,8 @@
 from .abstract import Analyzer
 from .korean import KoreanAnalyzer
 from .english import EnglishAnalyzer
+from .chunker import chunk_sentences
+from .embedding_processor import EmbeddingProcessor
 
 analyzers = {
     "ko": KoreanAnalyzer,
