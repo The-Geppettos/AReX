@@ -1,5 +1,4 @@
-import { AssistantChatBot } from "./AssistantChatBot";
-import { CharacterChatBot } from "./CharacterChatBot";
+import { ChatBot } from "../../chatbot";
 
 export const BreathModalContent = ({
   bookId,
@@ -8,10 +7,5 @@ export const BreathModalContent = ({
   bookId: string;
   offset: number;
 }) => {
-  return (
-    <>
-      <AssistantChatBot bookId={bookId} offset={offset} />
-      <CharacterChatBot bookId={bookId} offset={offset} />
-    </>
-  );
+  return <ChatBot bookId={bookId} offset={offset} />;
 };

@@ -1,6 +1,14 @@
 @use "./components/modal";
 @use "./components/pageView";
 @use "./components/reader";
+@use "./components/chatbot";
+
+@font-face {
+  font-family: "MapoGoldenPier";
+  src: url("/MapoGoldenPierA.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
 
 @keyframes fade-in {
   from {
@@ -10,7 +18,6 @@
     opacity: 1;
   }
 }
-
 
 * {
   box-sizing: border-box;
@@ -29,6 +36,7 @@
   --light-color: #f9f9f9;
   --white-color: #ffffff;
   --red-color: #ff0000;
+  font-family: "MapoGoldenPier";
 }
 
 body {

@@ -21,6 +21,7 @@ export type ChatHistory = {
 };
 
 export const CHAT_TYPES = ["assistant", "character"] as const;
+export type ChatType = (typeof CHAT_TYPES)[number];
 
 export type ChatMessage = {
   role: "user" | "assistant";
