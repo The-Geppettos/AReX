@@ -37,6 +37,25 @@
   --white-color: #ffffff;
   --red-color: #ff0000;
   font-family: "MapoGoldenPier";
+  font-size: 24px;
+}
+
+button {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: none;
+  margin: none;
+}
+
+input {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: none;
+  margin: none;
 }
 
 body {

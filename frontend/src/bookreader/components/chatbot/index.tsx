@@ -42,9 +42,7 @@ export const ChatBot = ({
             ></button>
           </div>
         ))}
-        <button className="new-chat-button" onClick={() => newChat()}>
-          New Assistant Chat
-        </button>
+        <button className="new-chat-button" onClick={() => newChat()} />
       </div>
       <div className="chat-container">
         <div className="chat-title">{chatController.chatTitle}</div>

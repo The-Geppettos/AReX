@@ -4,7 +4,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { AutoStories, CloudUpload, LibraryBooks } from "@mui/icons-material";
 import { BookListView } from "./components/BookList";
 import { Layout } from "./components/layout";
-import { RegisterNewBook } from "./components/admin/RegisterNewBook";
+import { RegisterNewBook } from "./components/admin/registerNewBook";
 import { ManageBooks } from "./components/admin/ManageBooks";
 import { theme } from "./theme";
 

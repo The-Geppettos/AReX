@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "AReX-Backend",
   "version": "1.0.0",
   "description": "AI-powered eBook reader backend server",
   "main": "dist/index.js",
