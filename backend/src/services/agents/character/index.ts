@@ -199,6 +199,8 @@ export class CharacterAgentService {
       throw new Error("Failed to create chat history for character check");
     }
 
+    console.log(messages)
+
     return {
       has_character: true,
       character_name: characterName,
@@ -313,6 +315,8 @@ export class CharacterAgentService {
     this.chatHistoryTable.updateById(chatHistoryId, {
       chat_messages: JSON.stringify(messages),
     });
+
+    console.log(messages);
 
     return { message, chat_id: chatHistoryId };
   }

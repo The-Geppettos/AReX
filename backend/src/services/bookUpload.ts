@@ -12,7 +12,7 @@ import type { BooksTable } from "@src/component/maindb/tables/books";
 import type { PostProcessProducer } from "@src/component/rabbitmq/queues/postProcess";
 import type { BookContentVectorCollection } from "@src/component/chromadb/vectorCollections/bookContent";
 
-import { generateId } from "@src/util";
+import { generateId, insertMetadataInContent } from "@src/util";
 
 const CHUNK_SENTENCES = 5;
 const CHUNK_SENTENCE_OVERLAP = 2;
@@ -458,14 +458,19 @@ export class BookUploadService {
         throw new Error(`Chapter not found for ID: ${chapterId}`);
       }
 
-      await this.bookContentVectorCollection.insert(sentences.join(" "), {
+      const metadata = {
         book_id: bookId,
         chapter_id: chapterId,
         offset,
-        pageNumber: cursor[0],
-        chapterTitle: chapter.title,
+        page_number: cursor[0],
+        chapter_title: chapter.title,
         chapter_number: chapter.chapter_number,
-      });
+      };
+
+      await this.bookContentVectorCollection.insert(
+        insertMetadataInContent(book.language, sentences.join(" "), metadata),
+        metadata,
+      );
 
       sentences = sentences.slice(-CHUNK_SENTENCE_OVERLAP);
     }

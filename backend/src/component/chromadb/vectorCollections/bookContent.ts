@@ -6,8 +6,8 @@ export type BookContentMetadata = {
   chapter_id: string;
   offset: number;
   chapter_number: number;
-  pageNumber: number;
-  chapterTitle: string;
+  page_number: number;
+  chapter_title: string;
 };
 
 export class BookContentVectorCollection extends VectorCollection {

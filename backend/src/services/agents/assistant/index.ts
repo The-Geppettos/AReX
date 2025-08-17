@@ -167,6 +167,7 @@ export class AssistantAgentService {
       });
     }
 
+    console.log(messages)
     return { message, chat_id: chatId };
   }
 }

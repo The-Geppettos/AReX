@@ -10,6 +10,7 @@
   .chat-list {
     width: 10em;
     min-width: 10em;
+    overflow-y: auto;
     .chat-list-item {
       display: flex;
       justify-content: space-between;
@@ -22,6 +23,8 @@
 
       .chat-title {
         flex-grow: 1;
+        min-width: 0;
+        overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
         text-align: left;

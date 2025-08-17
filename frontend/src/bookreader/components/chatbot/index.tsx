@@ -60,13 +60,10 @@ export const ChatBot = ({
                 onChange={(e) => {
                   chatController.setChatType(e.target.value as ChatType);
                 }}
+                value={chatController.chatType}
               >
                 {CHAT_TYPES.map((chatType) => (
-                  <option
-                    key={chatType}
-                    value={chatType}
-                    selected={chatController.chatType === chatType}
-                  >
+                  <option key={chatType} value={chatType}>
                     {chatType === "assistant" ? "도우미" : "등장인물"}
                   </option>
                 ))}
