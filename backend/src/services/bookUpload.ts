@@ -452,11 +452,19 @@ export class BookUploadService {
         chapterId = lastChapterId;
       }
 
-      await this.bookContentVectorCollection.insert({
+      const chapter = await this.bookChaptersTable.getById(chapterId);
+
+      if (!chapter) {
+        throw new Error(`Chapter not found for ID: ${chapterId}`);
+      }
+
+      await this.bookContentVectorCollection.insert(sentences.join(" "), {
         book_id: bookId,
         chapter_id: chapterId,
         offset,
-        content: sentences.join(" "),
+        pageNumber: cursor[0],
+        chapterTitle: chapter.title,
+        chapter_number: chapter.chapter_number,
       });
 
       sentences = sentences.slice(-CHUNK_SENTENCE_OVERLAP);

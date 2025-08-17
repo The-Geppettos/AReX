@@ -5,7 +5,7 @@ import type { ChatHistoryTable } from "@src/component/maindb/tables/chatHistory"
 import { OpenAI } from "openai";
 import { getSearchQueryRewritePrompts, getAnswerPrompts } from "./prompt";
 import { BotMessage, ChatMessage } from "@shared/chat";
-import { generateId } from "@src/util";
+import { generateId, searchResultToString } from "@src/util";
 
 const OPENAI_CHAT_MODEL = "gpt-4o-mini";
 
@@ -92,7 +92,10 @@ export class AssistantAgentService {
       7,
     );
 
-    const searchResultStr = JSON.stringify(searchResult);
+    const searchResultStr = searchResultToString(
+      searchResult,
+      book.language,
+    )[0];
 
     const messages = messagesStr
       ? (JSON.parse(messagesStr) as ChatMessage[])
@@ -101,6 +104,7 @@ export class AssistantAgentService {
     const mainPrompts = getAnswerPrompts(
       book.language,
       book.title,
+      book.author,
       query,
       rewrittenQuery,
       searchResultStr,
@@ -109,6 +113,13 @@ export class AssistantAgentService {
     messages.push(
       ...mainPrompts.userQueries.map((q) => ({
         role: "user" as const,
+        content: q,
+      })),
+    );
+
+    messages.push(
+      ...mainPrompts.assistantQueries.map((q) => ({
+        role: "assistant" as const,
         content: q,
       })),
     );

@@ -119,6 +119,7 @@ export const getCharacterChatPrompts = (
 ): {
   systemPrompt: string;
   userQueries: string[];
+  assistantQueries: string[];
 } => {
   switch (language) {
     case "ko":
@@ -127,11 +128,12 @@ export const getCharacterChatPrompts = (
           "당신은 책에 등장하는 등장인물로 빙의되어 사용자의 질문에 답변하는 유용한 도우미입니다.",
           `책 제목: ${bookTitle}`,
           `등장인물 이름: ${characterName}`,
-          "사용자는 등장인물의 특징을 나타내는 검색결과를 제공할 것이며, 당신은 이 정보를 참고하여 그 다음 사용자의 질문에 대해 해당 등장인물의 관점에서 답변해야 합니다.",
+          "당신은 등장인물의 특징을 책에서 검색하였으며, 당신은 이 정보를 참고하여 그 다음 사용자의 질문에 대해 해당 등장인물의 관점에서 답변해야 합니다.",
           "답변할 때는, 등장인물의 성격, 말투, 행동 등을 고려하여 답변해주세요.",
-          "사용자가 추가로 검색결과를 제공할 수 있습니다. 이 경우, 해당 검색결과 또한 참고하여 답변해주세요.",
+          "또한 당신은 사용자에게 답변하기 위해 필요한 추가적인 정보를 검색하였습니다. 해당 검색결과 또한 참고하여 답변해주세요.",
         ].join("\n"),
-        userQueries: [
+        userQueries: [`사용자 질문: ${userQuery}`],
+        assistantQueries: [
           ...(characterTraitSearch
             ? [
                 `등장인물 특징 검색 결과\n${characterTraitSearch.map((c) => `${c.searchQuery}: ${c.searchResult}`).join("\n")}`,
@@ -142,7 +144,6 @@ export const getCharacterChatPrompts = (
                 `검색쿼리: ${search.searchQuery}\n검색결과: ${search.searchResult}`,
               ]
             : []),
-          `사용자 질문: ${userQuery}`,
         ],
       };
     case "en":
@@ -153,9 +154,10 @@ export const getCharacterChatPrompts = (
           `Character Name: ${characterName}`,
           "The user will provide search results that reflect the character's traits, and you should use this information to answer the user's next questions from the character's perspective.",
           "When answering from the character's perspective, consider the character's personality, manner of speaking, and behavior.",
-          "The user may provide additional search results. In this case, also refer to those search results when answering.",
+          "You have also searched for additional information needed to answer the user's question. Please refer to these search results when answering.",
         ].join("\n"),
-        userQueries: [
+        userQueries: [`User question: ${userQuery}`],
+        assistantQueries: [
           ...(characterTraitSearch
             ? [
                 `Character traits search results:\n${characterTraitSearch.map((c) => `${c.searchQuery}: ${c.searchResult}`).join("\n")}`,
@@ -166,7 +168,6 @@ export const getCharacterChatPrompts = (
                 `Search query: ${search.searchQuery}\nSearch result: ${search.searchResult}`,
               ]
             : []),
-          `User question: ${userQuery}`,
         ],
       };
     default:

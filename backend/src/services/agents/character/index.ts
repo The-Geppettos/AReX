@@ -12,7 +12,7 @@ import {
   NO_CHARACTER_SPECIFIED,
 } from "./prompt";
 import { BotMessage, CharacterCheck, ChatMessage } from "@shared/chat";
-import { generateId } from "@src/util";
+import { generateId, searchResultToString } from "@src/util";
 
 const OPENAI_CHAT_MODEL = "gpt-4o-mini";
 
@@ -80,10 +80,15 @@ export class CharacterAgentService {
       2,
     );
 
+    const searchResultStr = searchResultToString(
+      characterSearch,
+      book.language,
+    )[0];
+
     const characterSearchCheckPrompt = getCharacterSearchCheckPrompt(
       book.language,
       userCharacter,
-      JSON.stringify(characterSearch),
+      searchResultStr,
     );
 
     const characterSearchCheck = await this.openai.chat.completions.create({
@@ -126,12 +131,13 @@ export class CharacterAgentService {
         5,
       );
 
-    const characterTraitSearch = characterTraitSearchResult.map(
-      (searchResult, idx) => ({
-        searchQuery: characterTraitSearchQuery[idx],
-        searchResult: JSON.stringify(searchResult),
-      }),
-    );
+    const characterTraitSearch = searchResultToString(
+      characterTraitSearchResult,
+      book.language,
+    ).map((searchResult, idx) => ({
+      searchQuery: characterTraitSearchQuery[idx],
+      searchResult: searchResult,
+    }));
 
     const characterChatPrompts = getCharacterChatPrompts(
       book.language,
@@ -148,6 +154,13 @@ export class CharacterAgentService {
         role: "user" as const,
         content: q,
       }),
+    );
+
+    messages.push(
+      ...characterChatPrompts.assistantQueries.map((q) => ({
+        role: "assistant" as const,
+        content: q,
+      })),
     );
 
     const response = await this.openai.chat.completions.create({
@@ -244,7 +257,10 @@ export class CharacterAgentService {
       7,
     );
 
-    const searchResultStr = JSON.stringify(searchResult);
+    const searchResultStr = searchResultToString(
+      searchResult,
+      book.language,
+    )[0];
 
     const messages = chatHistory.chat_messages
       ? (JSON.parse(chatHistory.chat_messages) as ChatMessage[])
@@ -261,6 +277,13 @@ export class CharacterAgentService {
     messages.push(
       ...characterChatPrompt.userQueries.map((q) => ({
         role: "user" as const,
+        content: q,
+      })),
+    );
+
+    messages.push(
+      ...characterChatPrompt.assistantQueries.map((q) => ({
+        role: "assistant" as const,
         content: q,
       })),
     );

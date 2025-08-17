@@ -1,29 +1,27 @@
 import { generateId } from "@src/util";
 import { VectorCollection } from "./abstract";
 
+export type BookContentMetadata = {
+  book_id: string;
+  chapter_id: string;
+  offset: number;
+  chapter_number: number;
+  pageNumber: number;
+  chapterTitle: string;
+};
+
 export class BookContentVectorCollection extends VectorCollection {
   collectionName = "book_content";
 
-  async insert(data: {
-    book_id: string;
-    chapter_id: string;
-    offset: number;
-    content: string;
-  }): Promise<void> {
+  async insert(content: string, metadata: BookContentMetadata): Promise<void> {
     if (!this.collection) {
       throw new Error("Collection is not initialized.");
     }
     const id = generateId();
     await this.collection.add({
       ids: [id],
-      documents: [data.content],
-      metadatas: [
-        {
-          book_id: data.book_id,
-          chapter_id: data.chapter_id,
-          offset: data.offset,
-        },
-      ],
+      documents: [content],
+      metadatas: [metadata],
     });
   }
 
@@ -36,12 +34,12 @@ export class BookContentVectorCollection extends VectorCollection {
     if (!this.collection) {
       throw new Error("Collection is not initialized.");
     }
-    const results = await this.collection.query({
+    const results = await this.collection.query<BookContentMetadata>({
       queryTexts: queryTexts,
       where: { $and: [{ book_id: bookId }, { offset: { $lt: offset } }] },
       nResults: limit,
     });
-    return results.documents;
+    return results;
   }
 
   async deleteAllByBookId(bookId: string): Promise<void> {
