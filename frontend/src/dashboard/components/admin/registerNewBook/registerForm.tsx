@@ -25,6 +25,7 @@ import {
   ArrowUpward,
   Delete,
   CloudUpload,
+  MoveDown,
 } from "@mui/icons-material";
 import { BookUploadAPI } from "@src/api/bookUpload";
 import {
@@ -197,9 +198,7 @@ export const RegisterForm = () => {
 
       await BookUploadAPI.finishUpload(createdBook.id);
 
-      alert(
-        "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
-      );
+      alert("New book is successfully uploaded!");
     } catch (error) {
       console.error("Error generating page:", error);
       alert("Failed to generate page for chapter.");
@@ -406,6 +405,44 @@ export const RegisterForm = () => {
                         secondary={`${chapter.file.name} (${chapter.length} characters)`}
                         sx={{ mr: 2 }}
                       />
+
+                      <IconButton
+                        disabled={chapters.value.length <= 1 || isUploading}
+                        size="small"
+                        title="Move To"
+                        onClick={() => {
+                          const chapterNum = prompt(
+                            `Enter the chapter number to move to. It should be between 1 and ${chapters.value.length}.`,
+                            String(index + 1),
+                          );
+
+                          if (!chapterNum) return;
+                          const chapterIndex = parseInt(chapterNum, 10) - 1;
+                          if (
+                            isNaN(chapterIndex) ||
+                            chapterIndex < 0 ||
+                            chapterIndex >= chapters.value.length
+                          ) {
+                            alert(
+                              `Invalid chapter number. It should be between 1 and ${chapters.value.length}.`,
+                            );
+                            return;
+                          }
+
+                          setChapters((prev) => {
+                            const newChapters = [...prev.value];
+                            const temp = newChapters[chapterIndex];
+                            newChapters[chapterIndex] = newChapters[index];
+                            newChapters[index] = temp;
+                            return {
+                              value: newChapters,
+                              error: null,
+                            };
+                          });
+                        }}
+                      >
+                        <MoveDown />
+                      </IconButton>
 
                       <IconButton
                         disabled={isUploading || index === 0}
