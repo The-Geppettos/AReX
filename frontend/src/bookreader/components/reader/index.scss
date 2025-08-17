@@ -22,22 +22,29 @@
   .book-reader-header {
     display: flex;
     justify-content: center;
+    flex-direction: row;
     align-items: center;
-    width: 100%;
     text-align: center;
-    padding: 2em;
+    padding: 2em 0;
   }
   &[data-orientation="portrait"] .book-reader-header {
-    flex-direction: column;
+    padding: 2em;
+    justify-content: space-between;
   }
   &[data-orientation="landscape"] .book-reader-header {
-    flex-direction: row;
+    * {
+      width: 50%;
+      text-align: center;
+    }
   }
 
   .book-reader-footer {
     width: 100%;
     text-align: center;
     padding: 2em;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
   }
 
   .breath-button {
@@ -90,5 +97,52 @@
     flex-grow: 1;
     min-height: 0;
     padding: 1em;
+  }
+}
+
+.scrollbar-wrapper {
+  width: 20em;
+  height: 0.6em;
+  user-select: none;
+
+  .scrollbar-track {
+    position: relative;
+    height: 0.5em;
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      var(--light-grey-color),
+      var(--dark-grey-color)
+    );
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+
+    .scrollbar-track-filled {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      background: linear-gradient(
+        180deg,
+        var(--theme-bg-color),
+        var(--theme-color)
+      );
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .scrollbar-hover-bubble {
+      position: absolute;
+      bottom: 1em;
+      transform: translateX(-50%);
+      background: var(--dark-color);
+      color: var(--white-color);
+      padding: 0.2em 0.4em;
+      font-size: 1em;
+      border-radius: 0.25em;
+      pointer-events: none;
+      white-space: nowrap;
+      box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.18);
+    }
   }
 }

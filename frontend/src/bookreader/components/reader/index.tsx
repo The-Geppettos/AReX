@@ -15,12 +15,15 @@ import {
 } from "../../const";
 import { indentFirstLine } from "@src/lib";
 import { ControlOverlay } from "./ControlOverlay";
+import { Scrollbar } from "./Scrollbar";
+
+type Orientation = "portrait" | "landscape";
 
 interface BookReaderProps {
   bookId: string;
 }
 
-const TROTTLE_TIME = 100;
+const RESIZE_TROTTLE_TIME = 100;
 
 export const BookReader = ({ bookId }: BookReaderProps) => {
   const readerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
@@ -41,6 +44,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
   }, [pageNumber]);
 
   const resizeThrottleOccupied = useRef<boolean>(false);
+  const resizeOrientation = useRef<Orientation | null>(null);
 
   const lastPage = useMemo(() => {
     if (!bookInfo) return 0;
@@ -182,6 +186,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         const avaliableHeight = readerHeight - headerHeight - footerHeight;
 
         if (availableWidth === 0 || avaliableHeight === 0) {
+          resizeThrottleOccupied.current = false;
           return; // Avoid division by zero
         }
 
@@ -189,7 +194,12 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
 
         let pageWidth;
 
-        if (aspectRatio > BREAK_ASPECT_RATIO) {
+        if (!resizeOrientation.current) {
+          resizeOrientation.current =
+            aspectRatio > BREAK_ASPECT_RATIO ? "landscape" : "portrait";
+        }
+
+        if (resizeOrientation.current === "landscape") {
           readerRef.current.setAttribute("data-orientation", "landscape");
 
           if (aspectRatio > 2 * SINGLE_PAGE_ASPECT_RATIO) {
@@ -197,6 +207,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
           } else {
             pageWidth = availableWidth / 2;
           }
+          headerRef.current.style.setProperty("width", `${pageWidth * 2}px`);
           setShowSinglePage(false);
         } else {
           readerRef.current.setAttribute("data-orientation", "portrait");
@@ -206,6 +217,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
           } else {
             pageWidth = availableWidth;
           }
+          headerRef.current.style.setProperty("width", `${pageWidth}px`);
           setShowSinglePage(true);
         }
 
@@ -213,17 +225,10 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         headerRef.current.style.setProperty("font-size", `${ratio * 70}%`);
         footerRef.current.style.setProperty("font-size", `${ratio * 70}%`);
 
-        for (const child of headerRef.current.children) {
-          (child as HTMLDivElement).style.setProperty(
-            "width",
-            `${pageWidth}px`,
-          );
-        }
-
         setPageWidth(pageWidth);
 
         resizeThrottleOccupied.current = false;
-      }, TROTTLE_TIME);
+      }, RESIZE_TROTTLE_TIME);
     };
 
     handleResize();
@@ -232,8 +237,16 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
     resizeObserver.observe(readerRef.current);
     resizeObserver.observe(headerRef.current);
     resizeObserver.observe(footerRef.current);
+
+    const windowResize = () => {
+      resizeOrientation.current = null;
+    };
+
+    window.addEventListener("resize", windowResize);
+
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener("resize", windowResize);
     };
   }, []);
 
@@ -298,6 +311,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         </div>
       )}
       <div ref={footerRef} className="book-reader-footer">
+        <Scrollbar
+          totalPages={bookInfo?.total_pages || 0}
+          page={pageNumber || 1}
+          onChange={(page) => {
+            setPageNumber(page);
+          }}
+        />
         Page {currentPageStr} of {bookInfo?.total_pages || 0}
       </div>
       {openControlOverlay && (
