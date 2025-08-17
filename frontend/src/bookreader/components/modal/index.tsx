@@ -1,7 +1,6 @@
 import {
   createContext,
   type PropsWithChildren,
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -9,55 +8,45 @@ import {
   useState,
 } from "react";
 
-type ModalInfo = {
-  header?: ReactNode;
-  className?: string;
-  footer?: ReactNode;
-  content: ReactNode;
-  closeOnClickBackground?: boolean;
-};
-
-type ModalInfoWithKey = ModalInfo & { key: number };
-
 const Z_INDEX_BASE = 20;
 
 const ModalContext = createContext({
-  modalInfoList: [] as ModalInfo[],
-  openModal: (_component: ModalInfo) => {},
-  closeModal: () => {},
+  openModal: (() => 0) as (element: Element) => number,
+  closeModal(_element: Element): void {},
 });
 
 export const ModalProvider = ({ children }: PropsWithChildren) => {
-  const [modalInfoList, setModalInfoList] = useState<ModalInfoWithKey[]>([]);
+  const [modalElements, setModalElements] = useState<Element[]>([]);
 
-  const modalWrapperRef = useRef<HTMLDivElement>(
-    null,
-  ) as React.RefObject<HTMLDivElement>;
   const modalFocusTrapInitialized = useRef(false);
-  const modalKey = useRef(0);
 
-  const openModal = useCallback((modalInfo: ModalInfo) => {
-    setModalInfoList((modalInfoList) => {
-      return [...modalInfoList, { ...modalInfo, key: modalKey.current++ }];
+  const openModal = useCallback((element: Element) => {
+    setModalElements((modalElements) => {
+      return [...modalElements, element];
     });
     modalFocusTrapInitialized.current = false;
+    return modalElements.length;
   }, []);
-  const closeModal = useCallback(() => {
-    setModalInfoList((modalInfoList) => {
-      const result = modalInfoList.slice(0, -1);
-      return result;
+  const closeModal = useCallback((element: Element) => {
+    setModalElements((modalElements) => {
+      if (modalElements[modalElements.length - 1] !== element) {
+        console.warn(
+          "Trying to close a modal that is not the last one opened.",
+        );
+        return modalElements;
+      }
+      return modalElements.slice(0, -1);
     });
   }, []);
 
   useEffect(() => {
-    if (modalInfoList.length === 0) return;
+    if (modalElements.length === 0) return;
 
     const focusTrap = (e: KeyboardEvent) => {
       if (e.key === "Tab") {
-        const lastChild = modalWrapperRef.current.lastElementChild;
-        if (!lastChild) return;
+        const lastModalElement = modalElements[modalElements.length - 1];
 
-        const FocusableElements = lastChild.querySelectorAll(
+        const FocusableElements = lastModalElement.querySelectorAll(
           "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
         );
 
@@ -100,50 +89,82 @@ export const ModalProvider = ({ children }: PropsWithChildren) => {
       window.removeEventListener("keydown", focusTrap);
       window.removeEventListener("focus", onFocus, true);
     };
-  }, [modalInfoList]);
+  }, [modalElements]);
 
   return (
     <ModalContext.Provider
       value={{
-        modalInfoList,
         openModal,
         closeModal,
       }}
     >
       {children}
-      <div className="modals-wrappeer" ref={modalWrapperRef}>
-        {modalInfoList.map((modalInfo, idx) => (
-          <div
-            key={modalInfo.key}
-            className="modal-background"
-            style={{ zIndex: Z_INDEX_BASE + idx }}
-            onClick={() => {
-              if (modalInfo.closeOnClickBackground) closeModal();
-            }}
-          >
-            <div
-              className={`modal${modalInfo.className ? ` ${modalInfo.className}` : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              <div className="header">
-                <div className="close-button-wrapper">
-                  <button className="close-button" onClick={closeModal} />
-                </div>
-                {modalInfo.header}
-              </div>
-              <div className="content">{modalInfo.content}</div>
-              <div className="footer">{modalInfo.footer}</div>
-            </div>
-          </div>
-        ))}
-      </div>
     </ModalContext.Provider>
   );
 };
 
-export const useModal = () => {
-  const { openModal, closeModal } = useContext(ModalContext);
-  return { openModal, closeModal };
+export const Modal = ({
+  open,
+  onClose,
+  closeOnClickBackground = true,
+  showCloseButton = true,
+  children,
+  className,
+}: PropsWithChildren<{
+  open: boolean;
+  onClose: () => void;
+  closeOnClickBackground?: boolean;
+  showCloseButton?: boolean;
+  className?: string;
+}>) => {
+  const { closeModal, openModal } = useContext(ModalContext);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const [modalIndex, setModalIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (open) {
+      if (!modalRef.current) {
+        console.error("Modal element is not initialized.");
+        return;
+      }
+      const modalElement = modalRef.current;
+      const modalIdx = openModal(modalElement);
+      setModalIndex(modalIdx);
+      return () => closeModal(modalElement);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="modal-background"
+      ref={modalRef}
+      style={{ zIndex: Z_INDEX_BASE + modalIndex }}
+      onClick={() => {
+        if (closeOnClickBackground) onClose();
+      }}
+    >
+      <div
+        className={`modal${className ? ` ${className}` : ""}`}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        {showCloseButton && (
+          <div className="modal-close-button-wrapper">
+            <button
+              className="modal-close-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+            ></button>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
 };

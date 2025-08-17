@@ -1,11 +1,14 @@
-import { useModal } from "../modal";
-import { BreathModalContent } from "./breathModal";
+import { useState } from "react";
+import { Modal } from "../modal";
+import { ChatBot } from "../chatbot";
 
 type ControlOverlayProps = {
   showPrevPageControl: boolean;
   showNextPageControl: boolean;
   bookId: string;
   offset: number;
+  pageNumber: number;
+  totalPages: number;
   prevPage: () => void;
   nextPage: () => void;
 };
@@ -15,10 +18,12 @@ export const ControlOverlay = ({
   showNextPageControl,
   bookId,
   offset,
+  pageNumber,
+  totalPages,
   prevPage,
   nextPage,
 }: ControlOverlayProps) => {
-  const { openModal } = useModal();
+  const [openBreathModal, setOpenBreathModal] = useState(false);
 
   return (
     <>
@@ -26,16 +31,31 @@ export const ControlOverlay = ({
         className="breath-button"
         onClick={(e) => {
           e.stopPropagation();
-          openModal({
-            className: "breath-modal",
-            content: <BreathModalContent bookId={bookId} offset={offset} />,
-            header: <span>지금까지 읽었던 내용에 대해 질의해보세요!</span>,
-            closeOnClickBackground: true,
-          });
+          setOpenBreathModal(true);
         }}
       >
         숨고르기
       </button>
+      {openBreathModal && (
+        <Modal
+          open={openBreathModal}
+          onClose={() => setOpenBreathModal(false)}
+          closeOnClickBackground={true}
+          className="breath-modal"
+        >
+          <div className="breath-modal-header">
+            지금까지 읽었던 내용에 대해 질의해보세요!
+          </div>
+          <div className="breath-modal-content">
+            <ChatBot
+              bookId={bookId}
+              offset={offset}
+              pageNumber={pageNumber}
+              totalPages={totalPages}
+            />
+          </div>
+        </Modal>
+      )}
       {showPrevPageControl && (
         <button
           className="page-control-button left"

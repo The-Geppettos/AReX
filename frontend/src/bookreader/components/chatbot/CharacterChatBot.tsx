@@ -4,11 +4,13 @@ import { AgentAPI } from "@src/api/agent";
 
 export const CharacterChatBot = ({
   bookId,
-  offset,
+  offset: initialOffset,
+  pageNumber: initialPageNumber,
   chatController,
 }: {
   bookId: string;
   offset: number;
+  pageNumber: number;
   chatController: ChatController;
 }) => {
   const messageContainerRef = useRef<HTMLDivElement>({} as HTMLDivElement);
@@ -19,7 +21,11 @@ export const CharacterChatBot = ({
     messages,
     appendMessage,
     chatId,
+    offset,
     setChatId,
+    setChatTitle,
+    setOffset,
+    setPageNumber,
   } = chatController;
 
   useEffect(() => {
@@ -49,18 +55,29 @@ export const CharacterChatBot = ({
           appendMessage({ content: message, role: "user" });
           try {
             if (!chatId) {
+              setChatTitle("등장인물 찾는중...");
               const characterCheck = await AgentAPI.checkCharacter({
                 message: message,
                 book_id: bookId,
-                offset: offset,
+                offset: initialOffset,
               });
               if (characterCheck.has_character) {
-                // setCharName(characterCheck.character_name);
+                setChatTitle(`${characterCheck.character_name}와의 대화`);
                 setChatId(characterCheck.chat_id);
+                setOffset(initialOffset);
+                setPageNumber(initialPageNumber);
                 appendMessage({
                   content: characterCheck.message,
                   role: "assistant",
                 });
+              } else {
+                setChatTitle("등장인물을 찾을 수 없음");
+                appendMessage({
+                  content:
+                    "입력하신 등장인물을 찾을 수 없습니다. 인물 이름을 정확히 입력했는지 확인해주세요.",
+                  role: "assistant",
+                });
+                return;
               }
             } else {
               const response = await AgentAPI.chatCharacter({

@@ -17,11 +17,17 @@ type Chat = {
   messageInput: string;
   messages: ChatMessage[];
   chatKey: number;
+  pageNumber: number;
+  offset: number;
+  isNew: boolean;
 };
 
 export type ChatController = {
   setChatId: (chatId: string) => void;
   setChatTitle: (chatTitle: string) => void;
+  setChatType: (chatType: ChatType) => void;
+  setPageNumber: (pageNumber: number) => void;
+  setOffset: (offset: number) => void;
   setMessageInput: (messageInput: string) => void;
   appendMessage: (message: ChatMessage) => void;
 } & Chat;
@@ -41,10 +47,13 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
     return {
       chatId: "",
       chatType: "assistant",
-      chatTitle: `New Chat`,
+      chatTitle: "새 채팅",
+      pageNumber: 1,
+      offset: 0,
       messageInput: "",
       messages: [],
       chatKey: key,
+      isNew: true,
     };
   };
 
@@ -74,6 +83,36 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
             return chatsCopy;
           });
         },
+        setChatType: (chatType: ChatType) => {
+          setChats((prev) => {
+            const chatsCopy = [...prev];
+            chatsCopy[idx] = {
+              ...chatsCopy[idx],
+              chatType: chatType,
+            };
+            return chatsCopy;
+          });
+        },
+        setPageNumber: (pageNumber: number) => {
+          setChats((prev) => {
+            const chatsCopy = [...prev];
+            chatsCopy[idx] = {
+              ...chatsCopy[idx],
+              pageNumber: pageNumber,
+            };
+            return chatsCopy;
+          });
+        },
+        setOffset: (offset: number) => {
+          setChats((prev) => {
+            const chatsCopy = [...prev];
+            chatsCopy[idx] = {
+              ...chatsCopy[idx],
+              offset: offset,
+            };
+            return chatsCopy;
+          });
+        },
         setMessageInput: (messageInput: string) => {
           setChats((prev) => {
             const chatsCopy = [...prev];
@@ -90,6 +129,7 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
             chatsCopy[idx] = {
               ...chatsCopy[idx],
               messages: [...chatsCopy[idx].messages, message],
+              isNew: false,
             };
             return chatsCopy;
           });
@@ -99,12 +139,12 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
   );
 
   const newChat = () => {
-    if (chats[chats.length - 1].chatId) {
+    if (chats[chats.length - 1].isNew) {
+      setSelectedChatIdx(chats.length - 1);
+    } else {
       const newKey = ++chatKeyIncrementRef.current;
       setSelectedChatIdx(chats.length);
       setChats((prev) => [...prev, getNewChat(newKey)]);
-    } else {
-      setSelectedChatIdx(chats.length - 1);
     }
   };
 

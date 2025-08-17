@@ -1,3 +1,4 @@
+import { CHAT_TYPES, type ChatType } from "@shared/chat";
 import { AssistantChatBot } from "./AssistantChatBot";
 import { CharacterChatBot } from "./CharacterChatBot";
 import { useChatBotContext } from "./context";
@@ -5,9 +6,13 @@ import { useChatBotContext } from "./context";
 export const ChatBot = ({
   bookId,
   offset,
+  pageNumber,
+  totalPages,
 }: {
   bookId: string;
   offset: number;
+  pageNumber: number;
+  totalPages: number;
 }) => {
   const {
     chatControllers,
@@ -42,14 +47,46 @@ export const ChatBot = ({
             ></button>
           </div>
         ))}
-        <button className="new-chat-button" onClick={() => newChat()} />
+        <div className="new-chat-button-wrapper">
+          <button className="new-chat-button" onClick={() => newChat()} />
+        </div>
       </div>
       <div className="chat-container">
-        <div className="chat-title">{chatController.chatTitle}</div>
+        <div className="chat-title">
+          {chatController.isNew ? (
+            <>
+              새 채팅:{" "}
+              <select
+                onChange={(e) => {
+                  chatController.setChatType(e.target.value as ChatType);
+                }}
+              >
+                {CHAT_TYPES.map((chatType) => (
+                  <option
+                    key={chatType}
+                    value={chatType}
+                    selected={chatController.chatType === chatType}
+                  >
+                    {chatType === "assistant" ? "도우미" : "등장인물"}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            chatController.chatTitle
+          )}
+          {chatController.chatId && (
+            <small className="chat-id">
+              {" "}
+              (진척도: {chatController.pageNumber}/{totalPages} pages)
+            </small>
+          )}
+        </div>
         {chatController.chatType === "assistant" && (
           <AssistantChatBot
             bookId={bookId}
             offset={offset}
+            pageNumber={pageNumber}
             chatController={chatController}
           />
         )}
@@ -57,6 +94,7 @@ export const ChatBot = ({
           <CharacterChatBot
             bookId={bookId}
             offset={offset}
+            pageNumber={pageNumber}
             chatController={chatController}
           />
         )}

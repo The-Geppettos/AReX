@@ -10,6 +10,13 @@
   font-style: normal;
 }
 
+@font-face {
+  font-family: "NanumHumanRegular";
+  src: url("/NanumHumanRegular.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -26,21 +33,35 @@
 }
 
 :root {
-  --theme-color: #ff8585;
-  --theme-bg-color: #ffe7e7;
-  --alt-color: #c28080;
-  --alt-bg-color: #f4f0f0;
+  --theme-color: #1976d2;
+  --theme-bg-color: #e3f2fd;
+
+  --alt-color: #dc004e;
+  --alt-bg-color: #ffebee;
+
   --dark-color: #282c34;
   --dark-grey-color: #d2d2d2;
   --light-grey-color: #eaeaea;
   --light-color: #f9f9f9;
+
   --white-color: #ffffff;
-  --red-color: #ff0000;
-  font-family: "MapoGoldenPier";
+
+  --background-color: #f5f5f5;
+
+  font-family: "NanumHumanRegular";
   font-size: 24px;
 }
 
 button {
+  background-color: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: none;
+  margin: none;
+}
+
+select {
   background-color: transparent;
   border: none;
   color: inherit;
@@ -59,6 +80,7 @@ input {
 }
 
 body {
+  background-color: var(--background-color);
   margin: 0;
   overflow-x: hidden;
   overflow-y: auto;

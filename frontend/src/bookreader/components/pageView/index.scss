@@ -1,6 +1,7 @@
 @use "../../const" as c;
 
 .book-page-view {
+  font-family: "MapoGoldenPier";
   position: relative;
   aspect-ratio: c.$book-page-aspect-ratio;
   .book-page-content {

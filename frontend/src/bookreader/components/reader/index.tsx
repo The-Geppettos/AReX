@@ -8,7 +8,11 @@ import React, {
 import type { Book, BookPageDetail } from "@shared/book";
 import { ReadBookAPI } from "@src/api/readBook";
 import { BookPageView } from "../pageView";
-import { BREAK_ASPECT_RATIO, SINGLE_PAGE_ASPECT_RATIO } from "../../const";
+import {
+  BOOK_PAGE_WIDTH,
+  BREAK_ASPECT_RATIO,
+  SINGLE_PAGE_ASPECT_RATIO,
+} from "../../const";
 import { indentFirstLine } from "@src/lib";
 import { ControlOverlay } from "./ControlOverlay";
 
@@ -183,25 +187,40 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
 
         const aspectRatio = availableWidth / avaliableHeight;
 
+        let pageWidth;
+
         if (aspectRatio > BREAK_ASPECT_RATIO) {
           readerRef.current.setAttribute("data-orientation", "landscape");
 
           if (aspectRatio > 2 * SINGLE_PAGE_ASPECT_RATIO) {
-            setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
+            pageWidth = avaliableHeight * SINGLE_PAGE_ASPECT_RATIO;
           } else {
-            setPageWidth(availableWidth / 2);
+            pageWidth = availableWidth / 2;
           }
           setShowSinglePage(false);
         } else {
           readerRef.current.setAttribute("data-orientation", "portrait");
 
           if (aspectRatio > SINGLE_PAGE_ASPECT_RATIO) {
-            setPageWidth(avaliableHeight * SINGLE_PAGE_ASPECT_RATIO);
+            pageWidth = avaliableHeight * SINGLE_PAGE_ASPECT_RATIO;
           } else {
-            setPageWidth(availableWidth);
+            pageWidth = availableWidth;
           }
           setShowSinglePage(true);
         }
+
+        const ratio = pageWidth / BOOK_PAGE_WIDTH;
+        headerRef.current.style.setProperty("font-size", `${ratio * 70}%`);
+        footerRef.current.style.setProperty("font-size", `${ratio * 70}%`);
+
+        for (const child of headerRef.current.children) {
+          (child as HTMLDivElement).style.setProperty(
+            "width",
+            `${pageWidth}px`,
+          );
+        }
+
+        setPageWidth(pageWidth);
 
         resizeThrottleOccupied.current = false;
       }, TROTTLE_TIME);
@@ -227,7 +246,12 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
       }}
     >
       <div ref={headerRef} className="book-reader-header">
-        Header
+        <div className="book-title">
+          {bookInfo ? bookInfo.title : "Loading..."}
+        </div>
+        <div className="book-author">
+          {bookInfo ? bookInfo.author : "Loading..."}
+        </div>
       </div>
       {pageWidth && (
         <div className="book-page-wrapper">
@@ -274,9 +298,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         </div>
       )}
       <div ref={footerRef} className="book-reader-footer">
-        <span>
-          Page {currentPageStr} of {bookInfo?.total_pages || 0}
-        </span>
+        Page {currentPageStr} of {bookInfo?.total_pages || 0}
       </div>
       {openControlOverlay && (
         <ControlOverlay
@@ -288,6 +310,12 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
               ? leftPage?.offset_end || 0
               : rightPage?.offset_end || leftPage?.offset_end || 0
           }
+          pageNumber={
+            showSinglePage && isLeftPage
+              ? leftPage?.page_number || 0
+              : rightPage?.page_number || leftPage?.page_number || 0
+          }
+          totalPages={bookInfo?.total_pages || 0}
           prevPage={prevPage}
           nextPage={nextPage}
         />
