@@ -1,5 +1,5 @@
 import type { ChatController } from "./context";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AgentAPI } from "@src/api/agent";
 
 export const AssistantChatBot = ({
@@ -14,6 +14,7 @@ export const AssistantChatBot = ({
   chatController: ChatController;
 }) => {
   const messageContainerRef = useRef<HTMLDivElement>({} as HTMLDivElement);
+  const [waiting, setWaiting] = useState(false);
 
   const {
     messageInput,
@@ -63,6 +64,7 @@ export const AssistantChatBot = ({
             if (!chatId) {
               requestParams.offset = initialOffset;
             }
+            setWaiting(true);
             const resMessage = await AgentAPI.askAssistant(requestParams);
             setChatTitle("도우미와의 대화");
             setChatId(resMessage.chat_id);
@@ -74,10 +76,12 @@ export const AssistantChatBot = ({
             });
           } catch (error) {
             console.error(error);
+          } finally {
+            setWaiting(false);
           }
         }}
       >
-        <div className="chat-input">
+        <fieldset className="chat-input" disabled={waiting}>
           <input
             value={messageInput}
             onChange={(e) => {
@@ -85,7 +89,7 @@ export const AssistantChatBot = ({
             }}
           />
           <button type="submit">Send</button>
-        </div>
+        </fieldset>
       </form>
     </>
   );

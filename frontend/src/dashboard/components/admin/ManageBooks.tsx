@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import type { BookList } from "@shared/book";
+import { useEffect, useState, type JSX } from "react";
+import type { BookList, BookStatus } from "@shared/book";
 import { BookManageAPI } from "@src/api/bookManage";
 import {
   Box,
+  Chip,
   Container,
   Divider,
   IconButton,
@@ -20,6 +21,16 @@ import {
 import { AutoStories, CloudDownload, CloudUpload } from "@mui/icons-material";
 
 const ROWS_PAGE_OPTIONS = [5, 10, 25];
+
+const STATUS_CHIP: Record<BookStatus, JSX.Element> = {
+  uploading: <Chip label="Uploading" color="default" variant="outlined" />,
+  preprocessing: <Chip label="Preprocessing" color="info" variant="outlined" />,
+  postprocessing: (
+    <Chip label="Postprocessing" color="primary" variant="outlined" />
+  ),
+  draft: <Chip label="Draft" color="warning" variant="outlined" />,
+  published: <Chip label="Published" color="success" variant="outlined" />,
+};
 
 export const ManageBooks = () => {
   const [bookList, setBookList] = useState<BookList>({
@@ -73,7 +84,9 @@ export const ManageBooks = () => {
                 <TableRow key={book.id}>
                   <TableCell align="center">{book.title}</TableCell>
                   <TableCell align="center">{book.author}</TableCell>
-                  <TableCell align="center">{book.status}</TableCell>
+                  <TableCell align="center">
+                    {STATUS_CHIP[book.status]}
+                  </TableCell>
                   <TableCell align="center">
                     {new Date(book.created_at).toLocaleDateString()}
                   </TableCell>

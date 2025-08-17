@@ -163,7 +163,8 @@
       display: flex;
       align-items: center;
       padding: 0.5em;
-      border-top: 1px solid var(--dark-grey-color);
+      margin: 0;
+      border: none;
 
       input {
         flex-grow: 1;
@@ -178,6 +179,10 @@
         color: var(--white-color);
         border-radius: 0.2em;
         cursor: pointer;
+        &:disabled {
+          background-color: var(--theme-bg-color);
+          cursor: not-allowed;
+        }
       }
     }
   }
