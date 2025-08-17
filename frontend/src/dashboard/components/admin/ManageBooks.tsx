@@ -30,6 +30,7 @@ const STATUS_CHIP: Record<BookStatus, JSX.Element> = {
   ),
   draft: <Chip label="Draft" color="warning" variant="outlined" />,
   published: <Chip label="Published" color="success" variant="outlined" />,
+  failed: <Chip label="Failed" color="error" variant="outlined" />,
 };
 
 export const ManageBooks = () => {
@@ -94,12 +95,14 @@ export const ManageBooks = () => {
                     {new Date(book.updated_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell align="center">
-                    <IconButton
-                      href={`/bookreader/read/${book.id}`}
-                      title="Read Book"
-                    >
-                      <AutoStories />
-                    </IconButton>
+                    {["draft", "published"].includes(book.status) && (
+                      <IconButton
+                        href={`/bookreader/read/${book.id}`}
+                        title="Read Book"
+                      >
+                        <AutoStories />
+                      </IconButton>
+                    )}
                     {book.status === "draft" && (
                       <IconButton
                         title="Publish"

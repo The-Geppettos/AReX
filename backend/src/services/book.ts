@@ -18,30 +18,36 @@ export class BookService {
 
   async publishBook(id: string): Promise<Book> {
     const updatedAt = new Date().toISOString();
-    const book = await this.booksTable.updateById(id, {
-      status: "published",
-      updated_at: updatedAt,
-    });
+    const books = await this.booksTable.update(
+      { id, status: "draft" },
+      {
+        status: "published",
+        updated_at: updatedAt,
+      },
+    );
 
-    if (!book) {
+    if (books.length === 0) {
       throw new Error(`Failed to publish book with ID: ${id}`);
     }
 
-    return book;
+    return books[0];
   }
 
   async unPublishBook(id: string): Promise<Book> {
     const updatedAt = new Date().toISOString();
-    const book = await this.booksTable.updateById(id, {
-      status: "draft",
-      updated_at: updatedAt,
-    });
+    const books = await this.booksTable.update(
+      { id, status: "published" },
+      {
+        status: "draft",
+        updated_at: updatedAt,
+      },
+    );
 
-    if (!book) {
+    if (books.length === 0) {
       throw new Error(`Failed to publish book with ID: ${id}`);
     }
 
-    return book;
+    return books[0];
   }
 
   async getById(id: string): Promise<Book | null> {

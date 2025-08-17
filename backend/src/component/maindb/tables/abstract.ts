@@ -189,4 +189,44 @@ export abstract class Table<T extends Object = {}> {
 
     return result.rows?.[0]?.count ? parseInt(result.rows[0].count, 10) : 0;
   }
+
+  async update(query: Partial<T>, instance: Partial<T>): Promise<T[]> {
+    if (!Object.keys(instance).length) {
+      throw new Error("Cannot update with empty instance");
+    }
+
+    const values = [];
+
+    const setFields = [];
+
+    for (const [field, value] of Object.entries(instance)) {
+      setFields.push(field);
+      values.push(value);
+    }
+
+    const setClause = setFields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+
+    const whereFields = [];
+
+    for (const [field, value] of Object.entries(query)) {
+      whereFields.push(field);
+      values.push(value);
+    }
+
+    const whereClause = whereFields
+      .map((field, index) => {
+        return `${field} = $${setFields.length + index + 1}`;
+      })
+      .join(" AND ");
+
+    const queryText = `UPDATE ${this.tableName}
+                       SET ${setClause}
+                       WHERE ${whereClause}
+                       RETURNING *;`;
+    const result = await this.mainDb.query<T>(queryText, values);
+
+    return result.rows;
+  }
 }

@@ -6,6 +6,7 @@ export const BOOK_STATUS = [
   "postprocessing",
   "draft",
   "published",
+  "failed",
 ] as const;
 
 export const PAGE_TRANSITION_TYPES = [
