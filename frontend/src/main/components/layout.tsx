@@ -45,8 +45,19 @@ export const Layout = ({ pages }: LayoutProps) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            AReX Dashboard
+          <Typography
+            variant="h6"
+            noWrap
+            component="div"
+            display="flex"
+            alignItems="center"
+          >
+            <img
+              src="/logo1_64.png"
+              alt="logo"
+              style={{ display: "inline", width: "2em", marginRight: "0.5em" }}
+            />
+            AReX
           </Typography>
         </Toolbar>
       </AppBar>
@@ -58,7 +69,7 @@ export const Layout = ({ pages }: LayoutProps) => {
         <Box sx={{ width: 250 }}>
           <Box sx={{ display: "flex", alignItems: "center", padding: 2 }}>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              AReX Dashboard
+              AReX
             </Typography>
             <IconButton onClick={() => setDrawerOpen(false)}>
               <CloseIcon />

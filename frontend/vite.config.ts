@@ -51,7 +51,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        dashboard: resolve(__dirname, "index.html"),
+        main: resolve(__dirname, "index.html"),
         bookreader: resolve(__dirname, "bookreader.html"),
       },
     },
