@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BookList } from "@shared/book";
-import { BookManageAPI } from "@src/api/bookManage";
+import { ReadBookAPI } from "@src/api/readBook";
 import {
   Box,
   Button,
@@ -30,7 +30,7 @@ export const BookListView = () => {
     try {
       const offset = page * BOOKS_PER_PAGE;
       const limit = BOOKS_PER_PAGE;
-      const bookList = await BookManageAPI.getBookList(offset, limit);
+      const bookList = await ReadBookAPI.getBookList(offset, limit);
       setBookList(bookList);
     } catch (err) {
       console.error("Error fetching books:", err);
