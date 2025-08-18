@@ -342,9 +342,14 @@ const main = async () => {
         }
       }
 
+      if (typeof nlpPreProcessRes.result.color_code !== "string") {
+        throw new Error("Invalid message format: color_code must be a string");
+      }
+
       await container.bookUploadService.updatePreProcessedData(
         nlpPreProcessRes.book_page_id,
         nlpPreProcessRes.result.sentence_boundaries,
+        nlpPreProcessRes.result.color_code,
       );
       acknowledge();
     } catch (error) {

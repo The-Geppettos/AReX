@@ -60,8 +60,12 @@ def analyze(content: str, prev_content: str | None, language: str):
 
         offset += len(paragraph) + 1
 
+
+    color_code = analyzer.extract_color(content)
+
     return {
-        "sentence_boundaries": sentence_boundaries
+        "sentence_boundaries": sentence_boundaries,
+        "color_code": color_code,
     }
 
 
