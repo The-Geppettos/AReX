@@ -151,6 +151,7 @@ export class BookUploadService {
       offset_start: offsetStart,
       offset_end: offsetEnd,
       sentence_boundaries: "[]",
+      color_code: "#FFFFFF",
       preprocessed: false,
       created_at: createdAt,
       updated_at: updatedAt,
@@ -223,6 +224,7 @@ export class BookUploadService {
   async updatePreProcessedData(
     bookPageId: string,
     sentenceBoundaries: BookPage["sentence_boundaries"],
+    colorCode: string,
   ) {
     const bookPage = await this.bookPagesTable.getById(bookPageId);
 
@@ -292,6 +294,7 @@ export class BookUploadService {
 
     await this.bookPagesTable.updateById(bookPageId, {
       sentence_boundaries: JSON.stringify(sentenceBoundaries),
+      color_code: colorCode,
       preprocessed: true,
       updated_at: updatedAt,
     });

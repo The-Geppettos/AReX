@@ -24,16 +24,16 @@ export class BookPageService {
     );
     if (!bookPage) return null;
 
-    let chapterTitle: string | null = null;
+    const chapter = await this.bookChaptersTable.getById(bookPage.chapter_id);
 
-    if (bookPage.page_transition_type === "new_chapter") {
-      const chapter = await this.bookChaptersTable.getById(bookPage.chapter_id);
-      chapterTitle = chapter ? chapter.title : null;
+    if (!chapter) {
+      throw new Error(`Chapter with ID ${bookPage.chapter_id} not found`);
     }
 
     return {
       ...bookPage,
-      chapter_title: chapterTitle,
+      chapter_title: chapter.title,
+      chapter_number: chapter.chapter_number,
       sentence_boundaries:
         bookPage.sentence_boundaries !== null
           ? JSON.parse(bookPage.sentence_boundaries)

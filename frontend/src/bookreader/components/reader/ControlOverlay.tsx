@@ -26,7 +26,7 @@ export const ControlOverlay = ({
   const [openBreathModal, setOpenBreathModal] = useState(false);
 
   return (
-    <>
+    <div className="book-control-overlay">
       <button
         className="breath-button"
         onClick={(e) => {
@@ -78,6 +78,6 @@ export const ControlOverlay = ({
           {">"}
         </button>
       )}
-    </>
+    </div>
   );
 };

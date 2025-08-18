@@ -13,6 +13,7 @@ export type NLPPreProcessRes =
       book_page_id: string;
       result: {
         sentence_boundaries: [number, number][];
+        color_code: string;
       };
     }
   | { success: false; book_page_id: string };

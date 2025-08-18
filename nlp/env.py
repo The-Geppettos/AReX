@@ -15,9 +15,13 @@ rbmq_host = rbmq_host if rbmq_host is not None else "localhost"
 rbmq_port = os.getenv("RABBITMQ_PORT")
 rbmq_port = rbmq_port if rbmq_port is not None else "5672"
 
+openai_api_key = os.getenv("OPENAI_API_KEY")
+openai_api_key = openai_api_key if openai_api_key is not None else ""
+
 if __name__ == "__main__":
     print(f"RabbitMQ Host: {rbmq_host}")
     print(f"RabbitMQ Port: {rbmq_port}")
     print(f"NLTK Data Path: {nltk_data_path}")
     print(f"Project Directory: {proj_dir}")
     print(f"Environment Path: {env_path}")
+    print(f"OpenAI API Key: {openai_api_key}")

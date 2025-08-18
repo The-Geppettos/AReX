@@ -250,6 +250,41 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
     };
   }, []);
 
+  const colorStyle = useMemo(() => {
+    const opacity1 = "10";
+    const opacity2 = "05";
+
+    if (showSinglePage) {
+      if (isLeftPage) {
+        return leftPage
+          ? {
+              background: `linear-gradient(to right, ${leftPage.color_code}${opacity1}, ${leftPage.color_code}${opacity2}, ${leftPage.color_code}${opacity1})`,
+            }
+          : {};
+      } else {
+        return rightPage
+          ? {
+              background: `linear-gradient(to right, ${rightPage.color_code}${opacity1}, ${rightPage.color_code}${opacity2}, ${rightPage.color_code}${opacity1})`,
+            }
+          : {};
+      }
+    }
+
+    if (!leftPage) {
+      return {};
+    }
+
+    if (!rightPage) {
+      return {
+        background: `linear-gradient(to right, ${leftPage.color_code}${opacity1}, ${leftPage.color_code}${opacity2}, ${leftPage.color_code}${opacity1})`,
+      };
+    }
+
+    return {
+      background: `linear-gradient(to right, ${leftPage.color_code}${opacity1}, ${leftPage.color_code}${opacity2}, ${rightPage.color_code}${opacity2}, ${rightPage.color_code}${opacity1})`,
+    };
+  }, [showSinglePage, isLeftPage, leftPage, rightPage]);
+
   return (
     <div
       ref={readerRef}
@@ -257,6 +292,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
       onClick={() => {
         setOpenControlOverlay((prev) => !prev);
       }}
+      style={colorStyle}
     >
       <div ref={headerRef} className="book-reader-header">
         <div className="book-title">
@@ -276,7 +312,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
                 firstLineIndent={indentFirstLine(
                   leftPage?.page_transition_type,
                 )}
-                chapterTitle={leftPage?.chapter_title || null}
+                chapterTitle={
+                  leftPage
+                    ? leftPage.page_transition_type === "new_chapter"
+                      ? leftPage.chapter_title
+                      : null
+                    : null
+                }
               />
             ) : (
               <BookPageView
@@ -285,7 +327,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
                 firstLineIndent={indentFirstLine(
                   rightPage?.page_transition_type,
                 )}
-                chapterTitle={rightPage?.chapter_title || null}
+                chapterTitle={
+                  rightPage
+                    ? rightPage.page_transition_type === "new_chapter"
+                      ? rightPage.chapter_title
+                      : null
+                    : null
+                }
               />
             )
           ) : (
@@ -296,7 +344,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
                 firstLineIndent={indentFirstLine(
                   leftPage?.page_transition_type,
                 )}
-                chapterTitle={leftPage?.chapter_title || null}
+                chapterTitle={
+                  leftPage
+                    ? leftPage.page_transition_type === "new_chapter"
+                      ? leftPage.chapter_title
+                      : null
+                    : null
+                }
               />
               <BookPageView
                 width={pageWidth}
@@ -304,7 +358,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
                 firstLineIndent={indentFirstLine(
                   rightPage?.page_transition_type,
                 )}
-                chapterTitle={rightPage?.chapter_title || null}
+                chapterTitle={
+                  rightPage
+                    ? rightPage.page_transition_type === "new_chapter"
+                      ? rightPage.chapter_title
+                      : null
+                    : null
+                }
               />
             </>
           )}
@@ -318,7 +378,16 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
             setPageNumber(page);
           }}
         />
-        Page {currentPageStr} of {bookInfo?.total_pages || 0}
+        <div>
+          Page {currentPageStr} of {bookInfo?.total_pages || 0}
+        </div>
+        <div>
+          {showSinglePage
+            ? isLeftPage
+              ? `챕터 ${leftPage?.chapter_number}: ${leftPage?.chapter_title || "N/A"}`
+              : `챕터 ${rightPage?.chapter_number}: ${rightPage?.chapter_title || "N/A"}`
+            : `챕터 ${leftPage?.chapter_number}: ${leftPage?.chapter_title || "N/A"}`}
+        </div>
       </div>
       {openControlOverlay && (
         <ControlOverlay

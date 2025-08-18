@@ -68,6 +68,7 @@ export interface BookPage {
   offset_end: number;
   sentence_boundaries: [number, number][];
   page_transition_type: PageTransitionType;
+  color_code: string;
   preprocessed: boolean;
   created_at: string;
   updated_at: string;
@@ -88,5 +89,6 @@ export interface BookPageUpload
   > {}
 
 export interface BookPageDetail extends BookPage {
-  chapter_title: string | null;
+  chapter_title: string;
+  chapter_number: number;
 }
