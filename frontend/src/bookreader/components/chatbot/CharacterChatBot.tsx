@@ -104,7 +104,9 @@ export const CharacterChatBot = ({
               setMessageInput(e.target.value);
             }}
           />
-          <button type="submit">Send</button>
+          <button type="submit">
+            <img src="/logo2_64.png" alt="AReX Logo" />
+          </button>
         </fieldset>
       </form>
     </>
