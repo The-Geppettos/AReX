@@ -1,0 +1,5 @@
+@use "sass:math";
+
+$book-page-width: 630px;
+$book-page-height: 891px;
+$book-page-aspect-ratio: math.div($book-page-width, $book-page-height);

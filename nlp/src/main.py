@@ -20,7 +20,7 @@ channel = None
 stop_triggered = False
 
 def signal_handler(sig, _frame):
-    print(f"Received {sig}, closing connection and exiting...")
+    print(f"Received {signal.Signals(sig).name}, closing connection and exiting...")
     global connection, channel, stop_triggered
 
     stop_triggered = True

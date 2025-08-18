@@ -1,9 +1,8 @@
-import type { Book, BookCreate, BookList } from "@shared/types";
+import type { Book, BookList } from "@shared/book";
 import type { MainDB } from "..";
 
-import { BOOK_STATUS } from "@shared/types";
+import { BOOK_STATUS } from "@shared/book";
 import { Table } from "./abstract";
-import { generateId } from "@src/util";
 
 export class BooksTable extends Table<Book> {
   tableName = "books";
@@ -15,6 +14,7 @@ export class BooksTable extends Table<Book> {
     author: "TEXT NOT NULL",
     status: "TEXT NOT NULL",
     language: "TEXT NOT NULL",
+    total_pages: "INTEGER NOT NULL",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
@@ -25,22 +25,6 @@ export class BooksTable extends Table<Book> {
       `CHECK (${this.field("status")} IN (${BOOK_STATUS.map((s) => `'${s}'`).join(", ")}))`,
     );
     this.addIndex(this.field("updated_at"), "DESC");
-  }
-
-  async createBook(book: BookCreate): Promise<Book> {
-    const id = generateId();
-    const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
-
-    const result = await this.insert({
-      ...book,
-      id,
-      status: "draft",
-      created_at: createdAt,
-      updated_at: updatedAt,
-    });
-
-    return result[0];
   }
 
   async getList(
@@ -69,19 +53,5 @@ export class BooksTable extends Table<Book> {
       limit,
       total: totalCount ? parseInt(totalCount) : 0,
     };
-  }
-
-  async changeBookStatus(id: string, status: Book["status"]): Promise<Book> {
-    const updatedAt = new Date().toISOString();
-    const result = await this.mainDb.query<Book>(
-      `UPDATE ${this.tableName} SET ${this.field("status")} = $1, ${this.field("updated_at")} = $2 WHERE ${this.field("id")} = $3 RETURNING *`,
-      [status, updatedAt, id],
-    );
-
-    if (result.rowCount === 0 || result.rows[0].status !== status) {
-      throw new Error(`Failed to update book status to ${status}`);
-    }
-
-    return result.rows[0];
   }
 }

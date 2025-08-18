@@ -1,12 +1,9 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   Box,
   Button,
   Card,
   Container,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Divider,
   FormControl,
   FormHelperText,
@@ -28,44 +25,30 @@ import {
   ArrowUpward,
   Delete,
   CloudUpload,
+  MoveDown,
 } from "@mui/icons-material";
-import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "../../../bookreader/const";
-import ExtAPI from "../../../api/extApi";
+import { BookUploadAPI } from "@src/api/bookUpload";
 import {
   LANGUAGE_LABELS,
   LANGUAGES,
   type BookPage,
   type Language,
-} from "@shared/types";
-import { indentFirstLine, TextProcessor } from "../../../lib";
-
-type BookPagenateResponse = {
-  visibleContentLength: number;
-};
-
-type BookPagenateRequest = {
-  chapterTitle: string | null;
-  content: string;
-  firstLineIndent: boolean;
-  token: string;
-  resolve: (value: BookPagenateResponse) => void;
-  reject: (reason?: unknown) => void;
-};
-
-const BOOK_FILE_EXT = ["txt"] as const;
-type BookFileExt = (typeof BOOK_FILE_EXT)[number];
-const PREVIEW_WIDTH = 450;
-
-const BOOK_FILE_EXT_MAP: Record<BookFileExt, string> = {
-  txt: "text/plain",
-};
+} from "@shared/book";
+import { indentFirstLine, TextProcessor } from "@src/lib";
+import { usePageSplitter } from "./pageSplitter";
 
 type InputState<T> = {
   value: T;
   error: string | null;
 };
 
-const RegisterNewBook = () => {
+const BOOK_FILE_EXT = ["txt"] as const;
+type BookFileExt = (typeof BOOK_FILE_EXT)[number];
+const BOOK_FILE_EXT_MAP: Record<BookFileExt, string> = {
+  txt: "text/plain",
+};
+
+export const RegisterForm = () => {
   const [bookTitle, setBookTitle] = useState<InputState<string>>({
     value: "",
     error: null,
@@ -83,9 +66,9 @@ const RegisterNewBook = () => {
       { title: InputState<string>; file: File; length: number; index: number }[]
     >
   >({ value: [], error: null });
-  const [bookPaginateRequest, setBookPaginateRequest] =
-    useState<BookPagenateRequest | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  const pageSplitter = usePageSplitter();
 
   const chapterIndexRef = useRef(0);
 
@@ -135,28 +118,6 @@ const RegisterNewBook = () => {
     });
   };
 
-  const bookPaginate = (
-    chapterTitle: string | null,
-    content: string,
-    firstLineIndent: boolean,
-    token: string,
-  ) => {
-    return new Promise<BookPagenateResponse>((resolve, reject) => {
-      setBookPaginateRequest({
-        chapterTitle,
-        content,
-        firstLineIndent,
-        resolve,
-        reject,
-        token,
-      });
-    });
-  };
-
-  const endBookPaginate = () => {
-    setBookPaginateRequest(null);
-  };
-
   const submit = async () => {
     if (!validate()) return;
 
@@ -170,7 +131,7 @@ const RegisterNewBook = () => {
 
     try {
       setIsUploading(true);
-      const createdBook = await ExtAPI.createBook({
+      const createdBook = await BookUploadAPI.uploadBook({
         title: bookTitle.value.trim(),
         author: author.value.trim(),
         language: language.value,
@@ -184,7 +145,7 @@ const RegisterNewBook = () => {
       }))) {
         const chapterTitle = chapter.title.value.trim();
 
-        const createdChapter = await ExtAPI.createBookChapter({
+        const createdChapter = await BookUploadAPI.uploadChapter({
           book_id: createdBook.id,
           title: chapterTitle,
           chapter_number: idx + 1,
@@ -197,24 +158,21 @@ const RegisterNewBook = () => {
           .removeDuplicateSpaces()
           .result();
 
-        const tokenPrefix = `book-${createdBook.id}-chapter-${createdChapter.id}`;
-
         let firstPage = true;
 
         let pageTransitionType: BookPage["page_transition_type"] =
           "new_chapter";
 
         while (content.length) {
-          const response = await bookPaginate(
-            firstPage ? chapterTitle : null,
+          const response = await pageSplitter.fitContentInPage({
+            chapterTitle: firstPage ? chapterTitle : null,
             content,
-            indentFirstLine(pageTransitionType),
-            `${tokenPrefix}-${pageNumber}`,
-          );
+            firstLineIndent: indentFirstLine(pageTransitionType),
+          });
 
           const pageContent = content.slice(0, response.visibleContentLength);
 
-          await ExtAPI.createBookPage({
+          await BookUploadAPI.uploadPage({
             book_id: createdBook.id,
             chapter_id: createdChapter.id,
             content: TextProcessor.fromText(pageContent).trim().result(),
@@ -237,15 +195,16 @@ const RegisterNewBook = () => {
           firstPage = false;
         }
       }
-      alert(
-        "Success!! Book is registered as a draft. Go to Manage Books menu to publish it.",
-      );
+
+      await BookUploadAPI.finishUpload(createdBook.id);
+
+      alert("New book is successfully uploaded!");
     } catch (error) {
       console.error("Error generating page:", error);
       alert("Failed to generate page for chapter.");
     } finally {
-      endBookPaginate();
       setIsUploading(false);
+      pageSplitter.dispose();
     }
   };
 
@@ -448,6 +407,44 @@ const RegisterNewBook = () => {
                       />
 
                       <IconButton
+                        disabled={chapters.value.length <= 1 || isUploading}
+                        size="small"
+                        title="Move To"
+                        onClick={() => {
+                          const chapterNum = prompt(
+                            `Enter the chapter number to move to. It should be between 1 and ${chapters.value.length}.`,
+                            String(index + 1),
+                          );
+
+                          if (!chapterNum) return;
+                          const chapterIndex = parseInt(chapterNum, 10) - 1;
+                          if (
+                            isNaN(chapterIndex) ||
+                            chapterIndex < 0 ||
+                            chapterIndex >= chapters.value.length
+                          ) {
+                            alert(
+                              `Invalid chapter number. It should be between 1 and ${chapters.value.length}.`,
+                            );
+                            return;
+                          }
+
+                          setChapters((prev) => {
+                            const newChapters = [...prev.value];
+                            const temp = newChapters[chapterIndex];
+                            newChapters[chapterIndex] = newChapters[index];
+                            newChapters[index] = temp;
+                            return {
+                              value: newChapters,
+                              error: null,
+                            };
+                          });
+                        }}
+                      >
+                        <MoveDown />
+                      </IconButton>
+
+                      <IconButton
                         disabled={isUploading || index === 0}
                         size="small"
                         title="Move Up"
@@ -535,124 +532,6 @@ const RegisterNewBook = () => {
           </Box>
         </Paper>
       </form>
-      <Dialog open={!!bookPaginateRequest} maxWidth={false}>
-        <BookPaginatorDialog bookPagenateRequest={bookPaginateRequest} />
-      </Dialog>
     </Container>
   );
 };
-
-const BookPaginatorDialog = ({
-  bookPagenateRequest,
-}: {
-  bookPagenateRequest: BookPagenateRequest | null;
-}) => {
-  const previewRef = useRef<HTMLIFrameElement>({} as HTMLIFrameElement);
-  const [isReady, setIsReady] = useState(false);
-  const tokenRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.source === previewRef.current?.contentWindow) {
-        if (event.data.type === "book-page-preview-load") {
-          setIsReady(true);
-        }
-        if (event.data.type === "book-page-preview-unload") {
-          setIsReady(false);
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-
-    return () => {
-      window.removeEventListener("message", handleMessage);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!bookPagenateRequest) return;
-
-    if (!isReady) {
-      if (tokenRef.current) {
-        console.warn(
-          "Book Preview is unloaded during pagination request. Waiting for reload...",
-        );
-        tokenRef.current = tokenRef.current + "-retry";
-      }
-      return;
-    }
-
-    if (tokenRef.current) {
-      console.warn("Book Preview is reloaded. Retrying pagination request...");
-    } else {
-      tokenRef.current = bookPagenateRequest.token;
-    }
-
-    const reqToken = tokenRef.current;
-
-    const handleResponse = (event: MessageEvent) => {
-      if (event.source === previewRef.current?.contentWindow) {
-        if (event.data.type === "book-page-preview-completed") {
-          const resToken = event.data.token;
-          if (!resToken) {
-            console.warn("Received response without token. Ignoring.");
-            return;
-          }
-          if (reqToken !== resToken) {
-            console.warn(
-              `Received response with token ${resToken}, expected ${reqToken}. Ignoring.`,
-            );
-            return;
-          }
-          const visibleContentLength = event.data.visible_content_length;
-          if (typeof visibleContentLength !== "number") {
-            bookPagenateRequest.reject(
-              "Invalid response from preview: visible_content_length is not a number.",
-            );
-            return;
-          }
-          tokenRef.current = null;
-          bookPagenateRequest.resolve({ visibleContentLength });
-
-          window.removeEventListener("message", handleResponse);
-        }
-      }
-    };
-
-    window.addEventListener("message", handleResponse);
-
-    previewRef.current.contentWindow?.postMessage(
-      {
-        type: "book-page-preview-start",
-        chapter_title: bookPagenateRequest.chapterTitle,
-        content: bookPagenateRequest.content,
-        first_line_indent: bookPagenateRequest.firstLineIndent,
-        width: PREVIEW_WIDTH,
-        token: reqToken,
-      },
-      "*",
-    );
-
-    return () => {
-      window.removeEventListener("message", handleResponse);
-    };
-  }, [isReady, bookPagenateRequest]);
-
-  return (
-    <>
-      <DialogTitle>Book Page Preview</DialogTitle>
-      <DialogContent>
-        <iframe
-          style={{ border: "none" }}
-          width={PREVIEW_WIDTH}
-          height={PREVIEW_WIDTH * (BOOK_PAGE_HEIGHT / BOOK_PAGE_WIDTH)}
-          ref={previewRef}
-          src="/bookreader/page-preview"
-        />
-      </DialogContent>
-    </>
-  );
-};
-
-export default RegisterNewBook;

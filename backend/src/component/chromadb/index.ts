@@ -5,6 +5,7 @@ import { OpenAIEmbeddingFunction } from "@chroma-core/openai";
 import { ChromaClient } from "chromadb";
 
 const RETRY_INTERVAL = 5000;
+const OPENAI_EMBEDDING_MODEL = "text-embedding-3-small";
 
 export class ChromaDB {
   private client: ChromaClient | undefined;
@@ -15,18 +16,11 @@ export class ChromaDB {
 
   private host: string;
   private port: number;
-  private openaiEmbeddingModel: string;
   private openaiApiKey: string;
 
-  constructor(
-    host: string,
-    port: number,
-    openaiEmbeddingModel: string,
-    openaiApiKey: string,
-  ) {
+  constructor(host: string, port: number, openaiApiKey: string) {
     this.host = host;
     this.port = port;
-    this.openaiEmbeddingModel = openaiEmbeddingModel;
     this.openaiApiKey = openaiApiKey;
   }
 
@@ -35,14 +29,14 @@ export class ChromaDB {
   }
 
   async initialize() {
-    console.log(`Initializing ChromaDB... at ${this.host}:${this.port}`);
+    console.info(`Initializing ChromaDB... at ${this.host}:${this.port}`);
 
     this.client = new ChromaClient({
       host: this.host,
       port: this.port,
     });
     this.embeddingFunction = new OpenAIEmbeddingFunction({
-      modelName: this.openaiEmbeddingModel,
+      modelName: OPENAI_EMBEDDING_MODEL,
       apiKey: this.openaiApiKey,
     });
 
@@ -70,7 +64,7 @@ export class ChromaDB {
       }
     }
 
-    console.log("ChromaDB initialized successfully.");
+    console.info("ChromaDB initialized successfully.");
   }
 
   async close() {

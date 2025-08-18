@@ -1,14 +1,11 @@
-import type { Book, BookDetail, BookList, Language } from "@shared/types";
+import type { Book, BookList } from "@shared/book";
 import type { BooksTable } from "@src/component/maindb/tables/books";
-import type { BookPagesTable } from "@src/component/maindb/tables/bookPage";
 
 export class BookService {
   private booksTable: BooksTable;
-  private bookPagesTable: BookPagesTable;
 
-  constructor(booksTable: BooksTable, bookPagesTable: BookPagesTable) {
+  constructor(booksTable: BooksTable) {
     this.booksTable = booksTable;
-    this.bookPagesTable = bookPagesTable;
   }
 
   async getPublishedBooks(offset: number, limit: number): Promise<BookList> {
@@ -20,31 +17,40 @@ export class BookService {
   }
 
   async publishBook(id: string): Promise<Book> {
-    return this.booksTable.changeBookStatus(id, "published");
+    const updatedAt = new Date().toISOString();
+    const books = await this.booksTable.update(
+      { id, status: "draft" },
+      {
+        status: "published",
+        updated_at: updatedAt,
+      },
+    );
+
+    if (books.length === 0) {
+      throw new Error(`Failed to publish book with ID: ${id}`);
+    }
+
+    return books[0];
   }
 
   async unPublishBook(id: string): Promise<Book> {
-    return this.booksTable.changeBookStatus(id, "draft");
+    const updatedAt = new Date().toISOString();
+    const books = await this.booksTable.update(
+      { id, status: "published" },
+      {
+        status: "draft",
+        updated_at: updatedAt,
+      },
+    );
+
+    if (books.length === 0) {
+      throw new Error(`Failed to publish book with ID: ${id}`);
+    }
+
+    return books[0];
   }
 
-  async getById(id: string): Promise<BookDetail | null> {
-    const book = await this.booksTable.getById(id);
-
-    if (!book) return null;
-
-    const totalPages = await this.bookPagesTable.getTotalPages(id);
-
-    return {
-      ...book,
-      total_pages: totalPages || 0,
-    };
-  }
-
-  async createBook(
-    title: string,
-    author: string,
-    language: Language,
-  ): Promise<Book> {
-    return await this.booksTable.createBook({ title, author, language });
+  async getById(id: string): Promise<Book | null> {
+    return this.booksTable.getById(id);
   }
 }

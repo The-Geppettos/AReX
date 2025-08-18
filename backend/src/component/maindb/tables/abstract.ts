@@ -78,7 +78,10 @@ export abstract class Table<T extends Object = {}> {
     });
   }
 
-  protected async insert(instance: T | T[]): Promise<T[]> {
+  insert(instance: T): Promise<T | null>;
+  insert(instances: T[]): Promise<T[]>;
+
+  async insert(instance: T | T[]): Promise<T | null | T[]> {
     let instances;
     if (!Array.isArray(instance)) {
       instances = [instance];
@@ -113,13 +116,43 @@ export abstract class Table<T extends Object = {}> {
     const query = `INSERT INTO ${this.tableName} (${fields.join(",")}) VALUES ${placeholders.join(",")} RETURNING *;`;
     const result = await this.mainDb.query<T>(query, values);
 
-    if (result.rowCount !== instances.length) {
-      throw new Error(
-        "Unexpected number of rows affected when inserting records",
-      );
+    if (Array.isArray(instance)) {
+      return result.rows;
+    } else {
+      return result.rows?.[0] || null;
+    }
+  }
+
+  async updateById(id: string, instance: Partial<T>): Promise<T | null> {
+    if (!Object.keys(instance).length) {
+      throw new Error("Cannot update with empty instance");
     }
 
-    return result.rows;
+    const fields = [];
+    const values = [];
+
+    for (const [field, value] of Object.entries(instance)) {
+      fields.push(field);
+      values.push(value);
+    }
+
+    values.push(id);
+
+    const setClause = fields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+
+    const query = `UPDATE ${this.tableName}
+                   SET ${setClause}
+                   WHERE ${this.idField as string} = $${fields.length + 1}
+                   RETURNING *;`;
+    const result = await this.mainDb.query<T>(query, values);
+
+    if (!result.rowCount) {
+      return null;
+    }
+
+    return result.rows[0];
   }
 
   async getById(id: string) {
@@ -133,5 +166,67 @@ export abstract class Table<T extends Object = {}> {
     }
 
     return result.rows[0];
+  }
+
+  async count(query: Partial<T> = {}): Promise<number> {
+    const values = [];
+    const fields = [];
+
+    for (const [field, value] of Object.entries(query)) {
+      fields.push(field);
+      values.push(value);
+    }
+    const whereClause = fields
+      .map((field, index) => {
+        return `${field} = $${index + 1}`;
+      })
+      .join(" AND ");
+
+    const result = await this.mainDb.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM ${this.tableName} ${whereClause ? `WHERE ${whereClause}` : ""}`,
+      values,
+    );
+
+    return result.rows?.[0]?.count ? parseInt(result.rows[0].count, 10) : 0;
+  }
+
+  async update(query: Partial<T>, instance: Partial<T>): Promise<T[]> {
+    if (!Object.keys(instance).length) {
+      throw new Error("Cannot update with empty instance");
+    }
+
+    const values = [];
+
+    const setFields = [];
+
+    for (const [field, value] of Object.entries(instance)) {
+      setFields.push(field);
+      values.push(value);
+    }
+
+    const setClause = setFields
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(", ");
+
+    const whereFields = [];
+
+    for (const [field, value] of Object.entries(query)) {
+      whereFields.push(field);
+      values.push(value);
+    }
+
+    const whereClause = whereFields
+      .map((field, index) => {
+        return `${field} = $${setFields.length + index + 1}`;
+      })
+      .join(" AND ");
+
+    const queryText = `UPDATE ${this.tableName}
+                       SET ${setClause}
+                       WHERE ${whereClause}
+                       RETURNING *;`;
+    const result = await this.mainDb.query<T>(queryText, values);
+
+    return result.rows;
   }
 }

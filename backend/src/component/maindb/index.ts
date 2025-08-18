@@ -37,11 +37,11 @@ export class MainDB {
   }
 
   async initialize() {
-    console.log(
+    console.info(
       `Initializing PostgreSQL at ${this.pool.options.host}:${this.pool.options.port}/${this.pool.options.database}...`,
     );
 
-    console.log("Initializing database schema...");
+    console.info("Initializing database schema...");
 
     for (const table of this.tables) {
       let tableCreateSuccess = false;
@@ -84,17 +84,17 @@ export class MainDB {
       }
     }
 
-    console.log("PostgreSQL initialized successfully.");
+    console.info("PostgreSQL initialized successfully.");
   }
 
   async close() {
-    console.log("Closing PostgreSQL connection...");
+    console.info("Closing PostgreSQL connection...");
     this.closeTriggered = true;
     try {
       await this.pool.end();
     } catch (error) {
       console.error("PostgreSQL connection close error:", error);
     }
-    console.log("PostgreSQL connection closed.");
+    console.info("PostgreSQL connection closed.");
   }
 }

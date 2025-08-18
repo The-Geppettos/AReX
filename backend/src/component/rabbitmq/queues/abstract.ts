@@ -1,5 +1,5 @@
-import type { ConsumeMessage, Options } from "amqplib";
-import type { RabbitMQ } from "..";
+import type { Options } from "amqplib";
+import type { ConsumeCallback, RabbitMQ } from "..";
 
 export abstract class Queue {
   abstract queueName: string;
@@ -13,23 +13,8 @@ export abstract class Queue {
 }
 
 export abstract class ConsumerQueue extends Queue {
-  consume(
-    consumeCallback: (
-      msg: ConsumeMessage,
-      acknowledge: () => Promise<void>,
-    ) => void,
-    options?: Options.Consume,
-  ) {
-    const callback = (msg: ConsumeMessage | null) => {
-      if (!msg) {
-        console.warn(`Received null message for queue: ${this.queueName}`);
-        return;
-      }
-      const acknowledge = () => this.rabbitMQ.acknowledgeMessage(msg);
-
-      consumeCallback(msg, acknowledge);
-    };
-    this.rabbitMQ.addConsumer(this.queueName, callback, options);
+  consume(consumeCallback: ConsumeCallback, options?: Options.Consume) {
+    this.rabbitMQ.addConsumer(this.queueName, consumeCallback, options);
   }
 }
 

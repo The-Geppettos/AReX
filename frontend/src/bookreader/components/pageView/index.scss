@@ -1,0 +1,34 @@
+@use "../../const" as c;
+
+.book-page-view {
+  font-family: "MapoGoldenPier";
+  position: relative;
+  aspect-ratio: c.$book-page-aspect-ratio;
+  .book-page-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    transform-origin: top left;
+    width: c.$book-page-width;
+    height: c.$book-page-height;
+    padding: 20px;
+
+    .book-chapter-title {
+      display: block;
+      font-size: 32px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .book-content-text {
+      white-space: pre-line;
+      font-size: 24px;
+      line-height: 1.5;
+      margin-top: 1em;
+      margin-bottom: 1em;
+      &.indented {
+        text-indent: 1em;
+      }
+    }
+  }
+}

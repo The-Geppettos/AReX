@@ -3,6 +3,11 @@ import { Queue } from "./queues/abstract";
 
 const RETRY_INTERVAL = 5000;
 
+export type ConsumeCallback = (
+  msg: amqp.ConsumeMessage,
+  acknowledge: () => void,
+) => void;
+
 export class RabbitMQ {
   private connectionPromise: Promise<amqp.ChannelModel | null> =
     Promise.resolve(null);
@@ -13,7 +18,7 @@ export class RabbitMQ {
   private queues: Queue[] = [];
   private consumers: [
     queueName: string,
-    consumeCallback: (msg: amqp.ConsumeMessage | null) => void,
+    consumeCallback: ConsumeCallback,
     options?: amqp.Options.Consume,
   ][] = [];
 
@@ -31,7 +36,7 @@ export class RabbitMQ {
 
   addConsumer(
     queueName: string,
-    consumeCallback: (msg: amqp.ConsumeMessage | null) => void,
+    consumeCallback: ConsumeCallback,
     options?: amqp.Options.Consume,
   ) {
     this.consumers.push([queueName, consumeCallback, options]);
@@ -48,18 +53,6 @@ export class RabbitMQ {
     }
 
     channel.sendToQueue(queueName, Buffer.from(message), options);
-  }
-
-  async acknowledgeMessage(
-    message: amqp.ConsumeMessage,
-    allUpTo: boolean = false,
-  ): Promise<void> {
-    const channel = await this.channelPromise;
-    if (!channel) {
-      throw new Error("Channel is not initialized. Call connect() first.");
-    }
-
-    channel.ack(message, allUpTo);
   }
 
   private async resolveChannelModel(
@@ -109,7 +102,7 @@ export class RabbitMQ {
 
       resolve(connection);
 
-      console.log("RabbitMQ connection established successfully.");
+      console.info("RabbitMQ connection established successfully.");
     } catch (err) {
       if (this.closeTriggered) {
         resolve(null);
@@ -147,12 +140,20 @@ export class RabbitMQ {
 
       for (const queue of this.queues) {
         await channel.assertQueue(queue.queueName, { durable: true });
-        console.log(`Queue ${queue.queueName} asserted successfully.`);
+        console.info(`Queue ${queue.queueName} asserted successfully.`);
       }
 
       for (const [queueName, consumeCallback, options] of this.consumers) {
-        await channel.consume(queueName, consumeCallback, options);
-        console.log(`Consumer for queue ${queueName} registered successfully.`);
+        const callback = (msg: amqp.ConsumeMessage | null) => {
+          if (!msg) {
+            console.warn(`Received null message for queue: ${queueName}`);
+            return;
+          }
+          const acknowledge = () => channel.ack(msg);
+          consumeCallback(msg, acknowledge);
+        };
+        await channel.consume(queueName, callback, options);
+        console.info(`Consumer for queue ${queueName} registered successfully.`);
       }
 
       if (this.closeTriggered) {
@@ -187,7 +188,7 @@ export class RabbitMQ {
 
       resolve(channel);
 
-      console.log("Channel created successfully.");
+      console.info("Channel created successfully.");
     } catch (err) {
       if (this.closeTriggered) {
         resolve(null);
@@ -204,7 +205,7 @@ export class RabbitMQ {
   }
 
   async initialize() {
-    console.log(`Connecting to RabbitMQ at ${this.host}:${this.port}...`);
+    console.info(`Connecting to RabbitMQ at ${this.host}:${this.port}...`);
 
     this.connectionPromise = new Promise<amqp.ChannelModel | null>(
       (resolve) => {
@@ -220,7 +221,7 @@ export class RabbitMQ {
   }
 
   async close(): Promise<void> {
-    console.log("Disconnecting from RabbitMQ...");
+    console.info("Disconnecting from RabbitMQ...");
     this.closeTriggered = true;
 
     const channel = await this.channelPromise;
@@ -244,6 +245,6 @@ export class RabbitMQ {
       }
     }
 
-    console.log("Disconnected from RabbitMQ.");
+    console.info("Disconnected from RabbitMQ.");
   }
 }

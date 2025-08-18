@@ -40,7 +40,7 @@ export class MainServer {
       }
 
       this.server = this.express.listen(this.port, () => {
-        console.log(`Main server is running on port ${this.port}`);
+        console.info(`Main server is running on port ${this.port}`);
         resolve();
       });
 
@@ -59,10 +59,12 @@ export class MainServer {
           if (error) {
             console.error("Error closing server:", error);
           } else {
-            console.log("Server closed successfully.");
+            console.info("Server closed successfully.");
           }
           resolve();
         });
+      } else {
+        resolve();
       }
     });
   }

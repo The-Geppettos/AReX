@@ -13,13 +13,21 @@ import { ChromaDB } from "@src/component/chromadb";
 import { BookContentVectorCollection } from "@src/component/chromadb/vectorCollections/bookContent";
 
 import { BookService } from "@src/services/book";
-import { BookChapterService } from "@src/services/bookChapter";
 import { BookPageService } from "@src/services/bookPage";
+import { BookUploadService } from "@src/services/bookUpload";
+import { AssistantAgentService } from "@src/services/agents/assistant";
+import { CharacterAgentService } from "@src/services/agents/character";
+
 import { RabbitMQ } from "@src/component/rabbitmq";
 import {
   NLPPreProcessConsumer,
   NLPPreProcessProducer,
 } from "@src/component/rabbitmq/queues/nlpPreProcess";
+import {
+  PostProcessConsumer,
+  PostProcessProducer,
+} from "@src/component/rabbitmq/queues/postProcess";
+import { ChatHistoryTable } from "./component/maindb/tables/chatHistory";
 
 dotenv.config({
   path: "../.env",
@@ -41,14 +49,17 @@ const chromadb_host = process.env.CHROMA_DB_HOST || "localhost";
 const chromadb_port = process.env.CHROMA_DB_PORT
   ? parseInt(process.env.CHROMA_DB_PORT, 10)
   : 8000;
-const openaiEmbeddingModel =
-  process.env.OPENAI_EMBEDDING_MODEL || "text-embedding-3-small";
+
 const openaiApiKey = process.env.OPENAI_API_KEY || "";
 
 const rbmq_host = process.env.RABBITMQ_HOST || "localhost";
 const rbmq_port = process.env.RABBITMQ_PORT || "5672";
 
-// -- Initialize Instances --
+/*
+ * --- Initialization ---
+ * This section initializes the main components of the application.
+ * Dependencies are injected into each component to ensure they can interact with each other.
+ */
 
 const mainServer = new MainServer(main_server_port);
 
@@ -67,11 +78,11 @@ const bookPagesTable = new BookPagesTable(
   booksTable,
   bookChaptersTable,
 );
+const chatHistoryTable = new ChatHistoryTable(mainDb, booksTable);
 
 export const chromaDb = new ChromaDB(
   chromadb_host,
   chromadb_port,
-  openaiEmbeddingModel,
   openaiApiKey,
 );
 
@@ -82,13 +93,30 @@ const rabbitMQ = new RabbitMQ(rbmq_host, rbmq_port);
 const nlpPreProcessProducer = new NLPPreProcessProducer(rabbitMQ);
 const nlpPreProcessConsumer = new NLPPreProcessConsumer(rabbitMQ);
 
-const bookService = new BookService(booksTable, bookPagesTable);
-const bookChapterService = new BookChapterService(bookChaptersTable);
-const bookPageService = new BookPageService(
+const postProcessProducer = new PostProcessProducer(rabbitMQ);
+const postProcessConsumer = new PostProcessConsumer(rabbitMQ);
+
+const bookService = new BookService(booksTable);
+const bookPageService = new BookPageService(bookPagesTable, bookChaptersTable);
+const bookUploadService = new BookUploadService(
   bookPagesTable,
   booksTable,
   bookChaptersTable,
   nlpPreProcessProducer,
+  postProcessProducer,
+  bookContentVectorCollection,
+);
+const assistantAgentService = new AssistantAgentService(
+  openaiApiKey,
+  bookContentVectorCollection,
+  booksTable,
+  chatHistoryTable,
+);
+const characterAgentService = new CharacterAgentService(
+  openaiApiKey,
+  bookContentVectorCollection,
+  booksTable,
+  chatHistoryTable,
 );
 
 export default {
@@ -97,7 +125,10 @@ export default {
   chromaDb,
   rabbitMQ,
   nlpPreProcessConsumer,
+  postProcessConsumer,
   bookService,
-  bookChapterService,
   bookPageService,
+  bookUploadService,
+  assistantAgentService,
+  characterAgentService,
 };

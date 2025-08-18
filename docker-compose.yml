@@ -8,7 +8,7 @@ services:
       - ./shared:/app/shared
       - ./.env:/app/.env
       - /app/frontend/node_modules
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && exec npm run dev"
     ports:
       - "${FRONTEND_DEV_PORT}:${FRONTEND_DEV_PORT}"
     depends_on:
@@ -24,7 +24,7 @@ services:
       - ./shared:/app/shared
       - ./.env:/app/.env
       - /app/backend/node_modules
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "npm install && exec node dev.js"
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
@@ -41,7 +41,7 @@ services:
       - ./.env:/app/.env
       - /app/nlp/.venv
       - /app/nlp/nltk_data
-    command: sh -c "python -m prepare dev && python -u dev.py"
+    command: sh -c "python -u -m prepare dev && exec python -u dev.py"
     depends_on:
       - rabbitmq
 

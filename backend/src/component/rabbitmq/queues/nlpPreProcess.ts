@@ -1,4 +1,5 @@
-import type { NLPPreProcessReq } from "@shared/types";
+import type { NLPPreProcessReq } from "@shared/messageBroker";
+
 import { ProducerQueue, ConsumerQueue } from "./abstract";
 
 export class NLPPreProcessProducer extends ProducerQueue<NLPPreProcessReq> {
