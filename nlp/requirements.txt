@@ -1,2 +1,9 @@
 python-dotenv
 pika
+nltk
+kss
+openai
+pydantic
+langchain
+langchain-core
+langchain-openai

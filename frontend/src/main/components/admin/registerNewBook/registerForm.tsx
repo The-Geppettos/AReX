@@ -1,0 +1,537 @@
+import { Fragment, useRef, useState } from "react";
+import {
+  Box,
+  Button,
+  Card,
+  Container,
+  Divider,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  IconButton,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+import {
+  Add,
+  ArrowDownward,
+  ArrowUpward,
+  Delete,
+  CloudUpload,
+  MoveDown,
+} from "@mui/icons-material";
+import { BookUploadAPI } from "@src/api/bookUpload";
+import {
+  LANGUAGE_LABELS,
+  LANGUAGES,
+  type BookPage,
+  type Language,
+} from "@shared/book";
+import { indentFirstLine, TextProcessor } from "@src/lib";
+import { usePageSplitter } from "./pageSplitter";
+
+type InputState<T> = {
+  value: T;
+  error: string | null;
+};
+
+const BOOK_FILE_EXT = ["txt"] as const;
+type BookFileExt = (typeof BOOK_FILE_EXT)[number];
+const BOOK_FILE_EXT_MAP: Record<BookFileExt, string> = {
+  txt: "text/plain",
+};
+
+export const RegisterForm = () => {
+  const [bookTitle, setBookTitle] = useState<InputState<string>>({
+    value: "",
+    error: null,
+  });
+  const [author, setAuthor] = useState<InputState<string>>({
+    value: "",
+    error: null,
+  });
+  const [language, setLanguage] = useState<InputState<Language>>({
+    value: LANGUAGES[0],
+    error: null,
+  });
+  const [chapters, setChapters] = useState<
+    InputState<
+      { title: InputState<string>; file: File; length: number; index: number }[]
+    >
+  >({ value: [], error: null });
+  const [isUploading, setIsUploading] = useState(false);
+
+  const pageSplitter = usePageSplitter();
+
+  const chapterIndexRef = useRef(0);
+
+  const validate = () => {
+    let valid = true;
+    if (!bookTitle.value.trim()) {
+      setBookTitle((prev) => ({ ...prev, error: "Book title is required." }));
+      valid = false;
+    }
+    if (!author.value.trim()) {
+      setAuthor((prev) => ({ ...prev, error: "Author name is required." }));
+      valid = false;
+    }
+    if (!LANGUAGES.includes(language.value)) {
+      setLanguage((prev) => ({
+        ...prev,
+        error: `Language must be one of ${LANGUAGES.join(", ")}`,
+      }));
+      valid = false;
+    }
+    if (chapters.value.length === 0) {
+      setChapters((prev) => ({
+        ...prev,
+        error: "At least one chapter is required.",
+      }));
+      valid = false;
+    }
+    for (const chapter of chapters.value) {
+      if (!chapter.title.value.trim()) {
+        setChapters((prev) => ({
+          ...prev,
+          error: "All chapters must have a title.",
+        }));
+        valid = false;
+      }
+    }
+
+    return valid;
+  };
+
+  const getContentText = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  };
+
+  const submit = async () => {
+    if (!validate()) return;
+
+    const confirm = window.confirm(
+      "Are you sure you want to register this book?",
+    );
+
+    if (!confirm) {
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const createdBook = await BookUploadAPI.uploadBook({
+        title: bookTitle.value.trim(),
+        author: author.value.trim(),
+        language: language.value,
+      });
+
+      let pageNumber = 1;
+
+      for (const { chapter, idx } of chapters.value.map((chapter, idx) => ({
+        chapter,
+        idx,
+      }))) {
+        const chapterTitle = chapter.title.value.trim();
+
+        const createdChapter = await BookUploadAPI.uploadChapter({
+          book_id: createdBook.id,
+          title: chapterTitle,
+          chapter_number: idx + 1,
+        });
+
+        let content = await getContentText(chapter.file);
+        content = TextProcessor.fromText(content)
+          .trim()
+          .removeDuplicateLineBreaks()
+          .removeDuplicateSpaces()
+          .result();
+
+        let firstPage = true;
+
+        let pageTransitionType: BookPage["page_transition_type"] =
+          "new_chapter";
+
+        while (content.length) {
+          const response = await pageSplitter.fitContentInPage({
+            chapterTitle: firstPage ? chapterTitle : null,
+            content,
+            firstLineIndent: indentFirstLine(pageTransitionType),
+          });
+
+          const pageContent = content.slice(0, response.visibleContentLength);
+
+          await BookUploadAPI.uploadPage({
+            book_id: createdBook.id,
+            chapter_id: createdChapter.id,
+            content: TextProcessor.fromText(pageContent).trim().result(),
+            page_number: pageNumber++,
+            page_transition_type: pageTransitionType,
+          });
+
+          content = content.slice(response.visibleContentLength);
+
+          if (content.startsWith("\n") || pageContent.endsWith("\n")) {
+            pageTransitionType = "line_break";
+          } else if (content.startsWith(" ") || pageContent.endsWith(" ")) {
+            pageTransitionType = "space";
+          } else {
+            pageTransitionType = "intra_word_break";
+          }
+
+          content = TextProcessor.fromText(content).trim().result();
+
+          firstPage = false;
+        }
+      }
+
+      await BookUploadAPI.finishUpload(createdBook.id);
+
+      alert("New book is successfully uploaded!");
+    } catch (error) {
+      console.error("Error generating page:", error);
+      alert("Failed to generate page for chapter.");
+    } finally {
+      setIsUploading(false);
+      pageSplitter.dispose();
+    }
+  };
+
+  const selectFile = (file: File) => {
+    const ext = file.name.split(".").pop()?.toLowerCase() as BookFileExt;
+    if (!BOOK_FILE_EXT.includes(ext)) {
+      alert(
+        `Unsupported file format: ${ext}. Please upload a valid book file.`,
+      );
+      return;
+    }
+    if (BOOK_FILE_EXT_MAP[ext] !== file.type) {
+      alert(
+        `File type mismatch: expected ${BOOK_FILE_EXT_MAP[ext]}, got ${file.type}. Please upload a valid book file.`,
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const title = file.name.split(".").slice(0, -1).join(".");
+
+      const text = e.target?.result as string;
+      const length = text.length;
+
+      setChapters((prev) => ({
+        value: [
+          ...prev.value,
+          {
+            title: { value: title, error: null },
+            file,
+            length,
+            index: chapterIndexRef.current++,
+          },
+        ],
+        error: null,
+      }));
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <Container maxWidth="lg">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <Box sx={{ margin: 1 }}>
+          <Typography variant="h4" component="h1">
+            Register New Book
+          </Typography>
+        </Box>
+        <Divider sx={{ marginBottom: 2 }} />
+        <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+          <FormLabel component="span">
+            <Typography variant="h5" component="div">
+              Book Information
+            </Typography>
+          </FormLabel>
+
+          <TextField
+            name="book-title"
+            label="Book Title"
+            placeholder="Enter the title of the book"
+            fullWidth
+            margin="normal"
+            error={!!bookTitle.error}
+            helperText={bookTitle.error || "Enter the title of the book"}
+            value={bookTitle.value}
+            onChange={(e) =>
+              setBookTitle({ value: e.target.value, error: null })
+            }
+            disabled={isUploading}
+          />
+          <TextField
+            name="author"
+            label="Author"
+            placeholder="Enter the author's name"
+            fullWidth
+            error={!!author.error}
+            helperText={author.error || "Enter the author's name"}
+            margin="normal"
+            value={author.value}
+            onChange={(e) => setAuthor({ value: e.target.value, error: null })}
+            disabled={isUploading}
+          />
+
+          <FormControl fullWidth>
+            <InputLabel>Language</InputLabel>
+            <Select
+              value={language.value}
+              label="Language"
+              onChange={(e) =>
+                setLanguage({ value: e.target.value as Language, error: null })
+              }
+            >
+              {LANGUAGES.map((lang) => (
+                <MenuItem key={lang} value={lang}>
+                  {LANGUAGE_LABELS[lang]}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Divider sx={{ mt: 3 }} />
+
+          <FormControl
+            sx={{
+              mt: 4,
+              mb: 2,
+            }}
+            error={!!chapters.error}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <FormLabel component="span">
+                <Typography variant="h5" component="div">
+                  Chapters
+                </Typography>
+              </FormLabel>
+              <label>
+                <IconButton component="label">
+                  <input
+                    type="file"
+                    multiple
+                    accept={BOOK_FILE_EXT.map((format) => `.${format}`).join(
+                      ", ",
+                    )}
+                    hidden
+                    onChange={(e) => {
+                      for (const file of e.target.files || []) {
+                        selectFile(file);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <Add />
+                </IconButton>
+              </label>
+            </Box>
+            <FormHelperText>{chapters.error}</FormHelperText>
+          </FormControl>
+
+          {chapters.value.length > 0 ? (
+            <Card>
+              <List>
+                {chapters.value.map((chapter, index) => (
+                  <Fragment key={chapter.index}>
+                    <ListItem>
+                      <Box sx={{ mr: 3, ml: 1 }}>
+                        <Typography
+                          variant="h6"
+                          component="div"
+                          color="primary"
+                        >
+                          Chapter {index + 1}
+                        </Typography>
+                      </Box>
+                      <ListItemText
+                        primary={
+                          <TextField
+                            name={`chapter-title-${index}`}
+                            label="Chapter Title"
+                            placeholder="Enter the chapter title"
+                            value={chapter.title.value}
+                            fullWidth
+                            error={!!chapter.title.error}
+                            helperText={
+                              chapter.title.error || "Enter the chapter title"
+                            }
+                            margin="normal"
+                            disabled={isUploading}
+                            onChange={(e) =>
+                              setChapters((prev) => ({
+                                value: prev.value.map((c, i) =>
+                                  i === index
+                                    ? {
+                                        ...c,
+                                        title: {
+                                          value: e.target.value,
+                                          error: null,
+                                        },
+                                      }
+                                    : c,
+                                ),
+                                error: null,
+                              }))
+                            }
+                          />
+                        }
+                        secondary={`${chapter.file.name} (${chapter.length} characters)`}
+                        sx={{ mr: 2 }}
+                      />
+
+                      <IconButton
+                        disabled={chapters.value.length <= 1 || isUploading}
+                        size="small"
+                        title="Move To"
+                        onClick={() => {
+                          const chapterNum = prompt(
+                            `Enter the chapter number to move to. It should be between 1 and ${chapters.value.length}.`,
+                            String(index + 1),
+                          );
+
+                          if (!chapterNum) return;
+                          const chapterIndex = parseInt(chapterNum, 10) - 1;
+                          if (
+                            isNaN(chapterIndex) ||
+                            chapterIndex < 0 ||
+                            chapterIndex >= chapters.value.length
+                          ) {
+                            alert(
+                              `Invalid chapter number. It should be between 1 and ${chapters.value.length}.`,
+                            );
+                            return;
+                          }
+
+                          setChapters((prev) => {
+                            const newChapters = [...prev.value];
+                            const temp = newChapters[chapterIndex];
+                            newChapters[chapterIndex] = newChapters[index];
+                            newChapters[index] = temp;
+                            return {
+                              value: newChapters,
+                              error: null,
+                            };
+                          });
+                        }}
+                      >
+                        <MoveDown />
+                      </IconButton>
+
+                      <IconButton
+                        disabled={isUploading || index === 0}
+                        size="small"
+                        title="Move Up"
+                        onClick={() => {
+                          setChapters((prev) => {
+                            const newChapters = [...prev.value];
+                            const temp = newChapters[index - 1];
+                            newChapters[index - 1] = newChapters[index];
+                            newChapters[index] = temp;
+                            return {
+                              value: newChapters,
+                              error: null,
+                            };
+                          });
+                        }}
+                      >
+                        <ArrowUpward />
+                      </IconButton>
+                      <IconButton
+                        disabled={
+                          isUploading || index === chapters.value.length - 1
+                        }
+                        size="small"
+                        title="Move Down"
+                        onClick={() => {
+                          setChapters((prev) => {
+                            const newChapters = [...prev.value];
+                            const temp = newChapters[index + 1];
+                            newChapters[index + 1] = newChapters[index];
+                            newChapters[index] = temp;
+                            return {
+                              value: newChapters,
+                              error: null,
+                            };
+                          });
+                        }}
+                      >
+                        <ArrowDownward />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        title="Delete Chapter"
+                        disabled={isUploading}
+                        onClick={() =>
+                          setChapters((prev) => ({
+                            value: prev.value.filter((_, i) => i !== index),
+                            error: null,
+                          }))
+                        }
+                      >
+                        <Delete />
+                      </IconButton>
+                    </ListItem>
+                    {index < chapters.value.length - 1 && <Divider />}
+                  </Fragment>
+                ))}
+              </List>
+            </Card>
+          ) : (
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              No chapters added yet. Click the add icon to upload a chapter
+              file.
+            </Typography>
+          )}
+
+          <Divider sx={{ mt: 5 }} />
+
+          <Box
+            sx={{
+              mt: 5,
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <Button
+              variant="contained"
+              type="submit"
+              size="large"
+              disabled={isUploading}
+              startIcon={<CloudUpload />}
+            >
+              Submit
+            </Button>
+          </Box>
+        </Paper>
+      </form>
+    </Container>
+  );
+};

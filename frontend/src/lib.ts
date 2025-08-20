@@ -1,4 +1,4 @@
-import type { BookPageDetail } from "@shared/types";
+import type { BookPageDetail } from "@shared/book";
 
 export const indentFirstLine = (
   pageTransitionType: BookPageDetail["page_transition_type"] | undefined,

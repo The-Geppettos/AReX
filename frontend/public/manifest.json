@@ -1,0 +1,29 @@
+{
+  "short_name": "AReX",
+  "name": "AReX - Agentic AI Augmented Reading eXperience",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "logo1_64.png",
+      "type": "image/png",
+      "sizes": "64x64"
+    },
+    {
+      "src": "logo1_192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo1_512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "display": "standalone",
+  "theme_color": "#f9f9f9",
+  "background_color": "#ffe7e7"
+}

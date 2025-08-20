@@ -1,14 +1,18 @@
 import pika
+from pika.adapters.blocking_connection import BlockingChannel
 
 import time
 import signal
 import sys
+import json
 
 from env import rbmq_host, rbmq_port
+from .analyzer import analyze
 
 RETRY_INTERVAL = 5  # seconds
 
-queue_name = "content-analysis"
+consumer_name = "nlp-pre-process-req"
+producer_name = "nlp-pre-process-res"
 
 connection = None
 channel = None
@@ -16,7 +20,7 @@ channel = None
 stop_triggered = False
 
 def signal_handler(sig, _frame):
-    print(f"Received {sig}, closing connection and exiting...")
+    print(f"Received {signal.Signals(sig).name}, closing connection and exiting...")
     global connection, channel, stop_triggered
 
     stop_triggered = True
@@ -51,20 +55,54 @@ while not stop_triggered:
         channel = connection.channel()
         print("Channel created.")
 
-        print(f"Declaring queue '{queue_name}'...")
-        channel.queue_declare(queue=queue_name, durable=True)
-        print(f"Queue '{queue_name}' declared.")
+        print(f"Declaring consumer queue '{consumer_name}'...")
+        channel.queue_declare(queue=consumer_name, durable=True)
+        print(f"Consumer queue '{consumer_name}' declared.")
 
-        def callback(ch, method, properties, body):
-            print(f"Received")
-            # Here you can process the message
+        print(f"Declaring producer queue '{producer_name}'...")
+        channel.queue_declare(queue=producer_name, durable=True)
+        print(f"Producer queue '{producer_name}' declared.")
+
+        def callback(ch: BlockingChannel, method, properties, body):
+            print("Message Received. Processing...")
+            inputStr = body.decode('utf-8')
+            inputDict = json.loads(inputStr)
+            book_page_id = inputDict.get("book_page_id", None)
+
+            try:
+                res = {
+                    "success": True,
+                    "result": analyze(
+                        content=inputDict.get("content", ""),
+                        prev_content=inputDict.get("prev_content"),
+                        language=inputDict.get("language", "en")
+                    )
+                }
+            except Exception as e:
+                print(f"Error analyzing content: {e}")
+                res = {"success": False}
+
+            res["book_page_id"] = book_page_id
+
+            res = json.dumps(res, ensure_ascii=False).encode('utf-8')
+
+            print("Publishing response to producer queue...")
+
+            ch.basic_publish(
+                exchange='',
+                routing_key=producer_name,
+                body=res,
+                properties=pika.BasicProperties(
+                    delivery_mode=2,  # Make message persistent
+                )
+            )
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
         channel.basic_consume(
-            queue=queue_name, on_message_callback=callback, auto_ack=False
+            queue=consumer_name, on_message_callback=callback, auto_ack=False
         )
 
-        print(f"Waiting for messages in queue '{queue_name}'...")
+        print(f"Waiting for messages in queue '{consumer_name}'...")
         channel.start_consuming()
 
     except Exception as error:

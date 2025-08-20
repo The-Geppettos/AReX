@@ -4,18 +4,17 @@ An intelligent eBook reading application that uses AI to enhance the reading exp
 
 ## Features
 
-- Modern, responsive UI for reading books
-- AI-powered assistance panel for explanations and insights
-- Progress tracking and checkpoints
-- User level-based content adaptation
-- Interactive quizzes and summaries
+- Modern, responsive UI for reading and managing books
+- AI-powered chatbot
+  - Assistant Mode: Provides real-time assistance while reading
+  - Character Mode: Chat with fictional characters from books
 
 ## Source Code Structure
 
 ```
 .
 ├── frontend/          # React frontend application
-├── backend/           # Node.js/Express backend server
+├── core-server/       # Node.js/Express server
 ├── nlp/               # Python NLP module for text processing
 └── shared/            # Shared TypeScript types
 ```
@@ -23,14 +22,17 @@ An intelligent eBook reading application that uses AI to enhance the reading exp
 ## Architecture Components
 
 The application is built using a microservices architecture with the following components:
-- **Frontend**: A React application that provides the user interface for eBook service and management.
-- **Backend**: A Node.js/Express server that handles API requests. This server is aimed to work like a gateway which handles I/O operations along with simple validations only.
-- **MainDB(PostgreSQL)**: A relational database for storing main content data such as books, user profiles, and reading progress.
-- **VectorDB(ChromaDB)**: A vector database for storing and retrieving book text embeddings for real-time AI-powered features.
-- **MessageBroker(RabbitMQ)**: A message broker for handling asynchronous tasks, mainly for heavy processing tasks like NLP operations.
-- **NLP Module**: A Python-based module that processes heavy NLP tasks which cannot be done in real-time. It communicates with the backend via RabbitMQ.
 
-## Setup for Development
+- **Frontend**: A React application that provides the user interface for eBook service and management.
+- **Core Server**: A Node.js/Express server that handles major business logic. It takes direct requests from the frontend and interacts with other components.
+- **CoreDB(PostgreSQL)**: A relational database for storing core content data such as books, user profiles, and reading progress.
+- **VectorDB(ChromaDB)**: Stores and retrieves book text embeddings for real-time AI-powered features.
+- **MessageBroker(RabbitMQ)**: handles and distributes asynchronous tasks, mainly for heavy processing tasks like NLP operations.
+- **NLP Module**: A Python-based module that processes heavy NLP tasks which cannot be done in real-time. It communicates with the Core Server via MessageBroker.
+
+## Development Environment
+
+This repository is a monorepo with Docker containerization. It provides a zero-configuration development environment that allows developers to run the entire application stack with just one command, `docker-compose up`.
 
 ### Prerequisites
 

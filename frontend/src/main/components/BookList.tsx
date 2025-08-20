@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { BookList } from "@shared/types";
-import ExtAPI from "../../api/extApi";
+import type { BookList } from "@shared/book";
+import { ReadBookAPI } from "@src/api/readBook";
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import { ArrowBackIos, ArrowForwardIos } from "@mui/icons-material";
 
 const BOOKS_PER_PAGE = 16;
 
-const ManageBooks = () => {
+export const BookListView = () => {
   const [bookList, setBookList] = useState<BookList>({
     books: [],
     offset: 0,
@@ -30,7 +30,7 @@ const ManageBooks = () => {
     try {
       const offset = page * BOOKS_PER_PAGE;
       const limit = BOOKS_PER_PAGE;
-      const bookList = await ExtAPI.getPublishedBookList(offset, limit);
+      const bookList = await ReadBookAPI.getBookList(offset, limit);
       setBookList(bookList);
     } catch (err) {
       console.error("Error fetching books:", err);
@@ -105,5 +105,3 @@ const BookListGrid = styled(Box)`
     grid-template-columns: 1fr;
   }
 `;
-
-export default ManageBooks;
