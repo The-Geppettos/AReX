@@ -24,6 +24,7 @@ interface BookReaderProps {
 }
 
 const RESIZE_TROTTLE_TIME = 100;
+const MAX_RESIZE_TRY = 5;
 
 export const BookReader = ({ bookId }: BookReaderProps) => {
   const readerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
@@ -45,6 +46,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
 
   const resizeThrottleOccupied = useRef<boolean>(false);
   const resizeOrientation = useRef<Orientation | null>(null);
+  const resizeTry = useRef<number>(0);
 
   const lastPage = useMemo(() => {
     if (!bookInfo) return 0;
@@ -176,6 +178,13 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
       resizeThrottleOccupied.current = true;
 
       setTimeout(() => {
+        if (resizeTry.current >= MAX_RESIZE_TRY) {
+          resizeThrottleOccupied.current = false;
+          return;
+        }
+
+        resizeTry.current++;
+
         const readerWidth = readerRef.current.clientWidth;
         const readerHeight = readerRef.current.clientHeight;
 
@@ -240,6 +249,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
 
     const windowResize = () => {
       resizeOrientation.current = null;
+      resizeTry.current = 0;
     };
 
     window.addEventListener("resize", windowResize);
