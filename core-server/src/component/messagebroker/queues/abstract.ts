@@ -13,9 +13,13 @@ export abstract class Queue {
 }
 
 export abstract class ConsumerQueue extends Queue {
-  consume(consumeCallback: ConsumeCallback, options?: Options.Consume) {
-    this.messageBroker.addConsumer(this.queueName, consumeCallback, options);
+  options: Options.Consume | undefined = undefined;
+
+  registerConsumer() {
+    this.messageBroker.addConsumer(this.queueName, this.consume, this.options);
   }
+
+  protected abstract consume: ConsumeCallback;
 }
 
 export abstract class ProducerQueue<T extends Object> extends Queue {

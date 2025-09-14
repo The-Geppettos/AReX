@@ -18,6 +18,11 @@ import { BookUploadService } from "@src/services/bookUpload";
 import { AssistantAgentService } from "@src/services/agents/assistant";
 import { CharacterAgentService } from "@src/services/agents/character";
 
+import { BookController } from "@src//controllers/books";
+import { BookPageController } from "@src/controllers/bookPages";
+import { AgentController } from "@src/controllers/agents";
+import { BookUploadController } from "@src/controllers/bookUpload";
+
 import { MessageBroker } from "@src/component/messagebroker";
 import {
   NLPPreProcessConsumer,
@@ -91,10 +96,7 @@ const bookSearchCollection = new BookSearchCollection(vectorDb);
 const messageBroker = new MessageBroker(rbmq_host, rbmq_port);
 
 const nlpPreProcessProducer = new NLPPreProcessProducer(messageBroker);
-const nlpPreProcessConsumer = new NLPPreProcessConsumer(messageBroker);
-
 const postProcessProducer = new PostProcessProducer(messageBroker);
-const postProcessConsumer = new PostProcessConsumer(messageBroker);
 
 const bookService = new BookService(booksTable);
 const bookPageService = new BookPageService(bookPagesTable, bookChaptersTable);
@@ -119,16 +121,38 @@ const characterAgentService = new CharacterAgentService(
   chatHistoryTable,
 );
 
+const nlpPreProcessConsumer = new NLPPreProcessConsumer(
+  messageBroker,
+  bookUploadService,
+);
+const postProcessConsumer = new PostProcessConsumer(
+  messageBroker,
+  bookUploadService,
+);
+
+nlpPreProcessConsumer.registerConsumer();
+postProcessConsumer.registerConsumer();
+
+const bookController = new BookController(httpServer, bookService);
+const bookPageController = new BookPageController(httpServer, bookPageService);
+const agentController = new AgentController(
+  httpServer,
+  assistantAgentService,
+  characterAgentService,
+);
+const bookUploadController = new BookUploadController(
+  httpServer,
+  bookUploadService,
+);
+
+bookController.registerRoutes();
+bookPageController.registerRoutes();
+agentController.registerRoutes();
+bookUploadController.registerRoutes();
+
 export default {
   httpServer,
   coreDb,
   vectorDb,
   messageBroker,
-  nlpPreProcessConsumer,
-  postProcessConsumer,
-  bookService,
-  bookPageService,
-  bookUploadService,
-  assistantAgentService,
-  characterAgentService,
 };

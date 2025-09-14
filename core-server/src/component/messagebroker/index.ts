@@ -1,5 +1,5 @@
 import amqp from "amqplib";
-import { Queue } from "./queues/abstract";
+import { ConsumerQueue, Queue } from "./queues/abstract";
 
 const RETRY_INTERVAL = 5000;
 
@@ -70,7 +70,10 @@ export class MessageBroker {
           await connection.close();
           resolve(null);
         } catch (error) {
-          console.error("Failed to close MessageBroker(RabbitMQ) connection:", error);
+          console.error(
+            "Failed to close MessageBroker(RabbitMQ) connection:",
+            error,
+          );
           resolve(null);
         }
         return;
@@ -153,7 +156,9 @@ export class MessageBroker {
           consumeCallback(msg, acknowledge);
         };
         await channel.consume(queueName, callback, options);
-        console.info(`Consumer for queue ${queueName} registered successfully.`);
+        console.info(
+          `Consumer for queue ${queueName} registered successfully.`,
+        );
       }
 
       if (this.closeTriggered) {
@@ -161,7 +166,10 @@ export class MessageBroker {
           await channel.close();
           resolve(null);
         } catch (error) {
-          console.error("Failed to close MessageBroker(RabbitMQ) channel:", error);
+          console.error(
+            "Failed to close MessageBroker(RabbitMQ) channel:",
+            error,
+          );
           resolve(null);
         }
         return;
@@ -205,7 +213,9 @@ export class MessageBroker {
   }
 
   async initialize() {
-    console.info(`Connecting to MessageBroker(RabbitMQ) at ${this.host}:${this.port}...`);
+    console.info(
+      `Connecting to MessageBroker(RabbitMQ) at ${this.host}:${this.port}...`,
+    );
 
     this.connectionPromise = new Promise<amqp.ChannelModel | null>(
       (resolve) => {
@@ -231,7 +241,10 @@ export class MessageBroker {
       try {
         await channel.close();
       } catch (error) {
-        console.error("Failed to close MessageBroker(RabbitMQ) channel:", error);
+        console.error(
+          "Failed to close MessageBroker(RabbitMQ) channel:",
+          error,
+        );
       }
     }
 
@@ -241,7 +254,10 @@ export class MessageBroker {
       try {
         await connection.close();
       } catch (error) {
-        console.error("Failed to close MessageBroker(RabbitMQ) connection:", error);
+        console.error(
+          "Failed to close MessageBroker(RabbitMQ) connection:",
+          error,
+        );
       }
     }
 
