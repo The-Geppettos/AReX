@@ -18,7 +18,6 @@ export class PostProcessConsumer extends ConsumerQueue {
   ) {
     super(messageBroker);
     this.bookUploadService = bookUploadService;
-    this.registerConsumer(this.consume);
   }
 
   consume: ConsumeCallback = async (message, acknowledge) => {
