@@ -7,7 +7,11 @@ import { ChatBotProvider } from "./components/chatbot/context";
 
 const BookReaderWrapper = () => {
   const { bookId } = useParams();
-  return <BookReader bookId={bookId || ""} />;
+  return (
+    <ChatBotProvider bookId={bookId || ""}>
+      <BookReader bookId={bookId || ""} />
+    </ChatBotProvider>
+  );
 };
 
 function App() {
@@ -21,11 +25,9 @@ function App() {
         <Route
           path={"/bookreader/read/:bookId"}
           element={
-            <ChatBotProvider>
-              <ModalProvider>
-                <BookReaderWrapper />
-              </ModalProvider>
-            </ChatBotProvider>
+            <ModalProvider>
+              <BookReaderWrapper />
+            </ModalProvider>
           }
         />
       </Routes>

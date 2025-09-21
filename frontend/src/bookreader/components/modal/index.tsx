@@ -12,11 +12,12 @@ const Z_INDEX_BASE = 20;
 
 const ModalContext = createContext({
   openModal: (() => 0) as (element: Element) => number,
-  closeModal(_element: Element): void {},
+  closeModal: (() => {}) as (element: Element) => void,
 });
 
 export const ModalProvider = ({ children }: PropsWithChildren) => {
   const [modalElements, setModalElements] = useState<Element[]>([]);
+  const modalLengthRef = useRef(0);
 
   const modalFocusTrapInitialized = useRef(false);
 
@@ -25,9 +26,11 @@ export const ModalProvider = ({ children }: PropsWithChildren) => {
       return [...modalElements, element];
     });
     modalFocusTrapInitialized.current = false;
-    return modalElements.length;
+    return modalLengthRef.current++;
   }, []);
+
   const closeModal = useCallback((element: Element) => {
+    modalLengthRef.current = Math.max(0, modalLengthRef.current - 1);
     setModalElements((modalElements) => {
       if (modalElements[modalElements.length - 1] !== element) {
         console.warn(
@@ -133,7 +136,7 @@ export const Modal = ({
       setModalIndex(modalIdx);
       return () => closeModal(modalElement);
     }
-  }, [open]);
+  }, [open, closeModal, openModal]);
 
   if (!open) return null;
 

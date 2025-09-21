@@ -1,4 +1,5 @@
 import type { ChatMessage, ChatType } from "@shared/chat";
+import { UserAPI } from "@src/api/user";
 import {
   createContext,
   useContext,
@@ -8,9 +9,10 @@ import {
   type Dispatch,
   type SetStateAction,
   useRef,
+  useEffect,
 } from "react";
 
-type Chat = {
+export type Chat = {
   chatId: string;
   chatType: ChatType;
   chatTitle: string;
@@ -40,7 +42,12 @@ const ChatBotContext = createContext({
   setSelectedChatIdx: (() => {}) as Dispatch<SetStateAction<number>>,
 });
 
-export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
+export const ChatBotProvider = ({
+  children,
+  bookId,
+}: PropsWithChildren<{
+  bookId: string;
+}>) => {
   const chatKeyIncrementRef = useRef(1);
 
   const getNewChat = (key: number): Chat => {
@@ -57,7 +64,24 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
     };
   };
 
-  const [chats, setChats] = useState<Chat[]>([getNewChat(1)]);
+  const [chats, setChats_] = useState<Chat[]>([]);
+  const setChats: Dispatch<SetStateAction<Chat[]>> = (value) => {
+    if (typeof value === "function") {
+      setChats_((prev) => {
+        const newValue = value(prev);
+        UserAPI.setCurrentChat(bookId, newValue).catch(() => {
+          console.error("Failed to save current chat");
+        });
+        return newValue;
+      });
+    } else {
+      setChats_(value);
+      UserAPI.setCurrentChat(bookId, value).catch(() => {
+        console.error("Failed to save current chat");
+      });
+    }
+  };
+
   const [selectedChatIdx, setSelectedChatIdx] = useState<number>(0);
   const chatControllers = useMemo(
     () =>
@@ -159,6 +183,25 @@ export const ChatBotProvider = ({ children }: PropsWithChildren<{}>) => {
       setChats((prev) => prev.filter((_, idx) => idx !== chatIdx));
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      const currentChat = await UserAPI.getCurrentChat(bookId);
+      const notNewChats = currentChat.filter((chat) => !chat.isNew);
+      if (notNewChats.length === 0) {
+        const newKey = ++chatKeyIncrementRef.current;
+        setChats_([getNewChat(newKey)]);
+      } else {
+        setChats_(
+          notNewChats.map((chat) => ({
+            ...chat,
+            messageInput: "",
+            chatKey: ++chatKeyIncrementRef.current,
+          })),
+        );
+      }
+    })();
+  }, [bookId]);
 
   return (
     <ChatBotContext.Provider

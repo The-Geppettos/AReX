@@ -16,6 +16,7 @@ import {
 import { indentFirstLine } from "@src/lib";
 import { ControlOverlay } from "./ControlOverlay";
 import { Scrollbar } from "./Scrollbar";
+import { UserAPI } from "@src/api/user";
 
 type Orientation = "portrait" | "landscape";
 
@@ -32,7 +33,16 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
   const footerRef = React.useRef<HTMLDivElement>({} as HTMLDivElement);
 
   const [bookInfo, setBookInfo] = useState<Book | null>(null);
-  const [pageNumber, setPageNumber] = useState<number | null>(null);
+  const [pageNumber, setPageNumber_] = useState<number | null>(null);
+  const setPageNumber = useCallback(
+    (page: number) => {
+      setPageNumber_(page);
+      UserAPI.setCurrentPage(bookId, page).catch((error) => {
+        console.error("Error saving current page:", error);
+      });
+    },
+    [bookId],
+  );
   const [leftPage, setLeftPage] = useState<BookPageDetail | null>(null);
   const [rightPage, setRightPage] = useState<BookPageDetail | null>(null);
   const [showSinglePage, setShowSinglePage] = useState<boolean>(false);
@@ -96,7 +106,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         setPageNumber(pageNumber - 3);
       }
     }
-  }, [pageNumber, showSinglePage, isLeftPage]);
+  }, [pageNumber, showSinglePage, isLeftPage, setPageNumber]);
 
   const showNextPageControl = useMemo(() => {
     if (!pageNumber) return false;
@@ -117,14 +127,15 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         setPageNumber(pageNumber + 3);
       }
     }
-  }, [pageNumber, lastPage, showSinglePage, isLeftPage]);
+  }, [pageNumber, lastPage, showSinglePage, isLeftPage, setPageNumber]);
 
   useEffect(() => {
     const fetchBookData = async () => {
       try {
         const bookInfo = await ReadBookAPI.getBookInfo(bookId);
+        const currentPage = await UserAPI.getCurrentPage(bookId);
         setBookInfo(bookInfo);
-        setPageNumber(1);
+        setPageNumber(currentPage);
       } catch (error) {
         console.error("Error fetching book data:", error);
         alert("Failed to load book data. Please try again later.");
@@ -132,7 +143,7 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
     };
 
     fetchBookData();
-  }, [bookId]);
+  }, [bookId, setPageNumber]);
 
   useEffect(() => {
     if (bookInfo && pageNumber !== null) {

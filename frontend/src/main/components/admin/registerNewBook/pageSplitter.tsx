@@ -135,7 +135,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
     });
   };
 
-  const runQueue = async (force: boolean = false) => {
+  const runQueue = useCallback(async (force: boolean = false) => {
     if (!force && (currentTokenRef.current || !previewRef.current)) {
       return;
     }
@@ -158,7 +158,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
     }
 
     currentTokenRef.current = null;
-  };
+  }, []);
 
   const fitContentInPage = useCallback(
     async ({
@@ -179,7 +179,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
 
       return await promise;
     },
-    [],
+    [runQueue],
   );
 
   return (
@@ -231,7 +231,7 @@ const PageSplitterDialog = () => {
       window.removeEventListener("message", handleMessage);
       onUnload();
     };
-  }, []);
+  }, [onLoad, onUnload]);
 
   return (
     <>
