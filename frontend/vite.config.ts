@@ -31,6 +31,16 @@ const coreServerHost = noAdmin
   : process.env.CORE_SERVER_HOST || "localhost";
 const coreServerProtocol = process.env.CORE_SERVER_PROTOCOL || "http";
 
+const devScript = `
+    <script type="module">
+      import { injectIntoGlobalHook } from "/@react-refresh";
+      injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+    </script>
+    <script type="module" src="/@vite/client"></script>
+`;
+
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
@@ -48,9 +58,10 @@ export default defineConfig({
           if (req.url?.startsWith("/bookreader/")) {
             const htmlPath = resolve(__dirname, "bookreader.html");
             const html = readFileSync(htmlPath, "utf-8");
+            const modifiedHtml = html.replace("<head>", `<head>${devScript}`);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 200;
-            res.end(html);
+            res.end(modifiedHtml);
             return;
           }
           next();
