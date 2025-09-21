@@ -122,6 +122,16 @@
     flex-direction: column;
     border-left: 1px solid var(--dark-grey-color);
 
+    .chat-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      font-size: 0.8em;
+      align-items: center;
+      text-align: center;
+    }
+
     .chat-title {
       padding: 0.5em;
       font-size: 1.2em;
@@ -167,6 +177,7 @@
       border: none;
 
       input {
+        width: 100%;
         flex-grow: 1;
         padding: 0.5em;
         border-radius: 0.2em;

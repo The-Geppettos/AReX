@@ -37,6 +37,14 @@ export const CharacterChatBot = ({
   return (
     <>
       <div className="chat-message-container" ref={messageContainerRef}>
+        {messages.length === 0 && (
+          <div className="chat-placeholder">
+            등장인물과 대화를 시작해보세요! 대화하고 싶은 인물을 호출하면 대화를
+            시작할 수 있습니다.
+            <br />
+            예) "제페토와 대화하고 싶어"
+          </div>
+        )}
         {messages.map((message, index) => (
           <div className={`chat-message ${message.role}`} key={index}>
             <div className={`chat-message-content ${message.role}`}>

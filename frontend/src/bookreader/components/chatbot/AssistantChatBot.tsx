@@ -37,6 +37,12 @@ export const AssistantChatBot = ({
   return (
     <>
       <div className="chat-message-container" ref={messageContainerRef}>
+        {messages.length === 0 && (
+          <div className="chat-placeholder">
+            책에 대해 궁금한 점을 물어보세요! 현재 페이지까지의 내용을 바탕으로
+            답변해 드립니다.
+          </div>
+        )}
         {messages.map((message, index) => (
           <div className={`chat-message ${message.role}`} key={index}>
             <div className={`chat-message-content ${message.role}`}>
