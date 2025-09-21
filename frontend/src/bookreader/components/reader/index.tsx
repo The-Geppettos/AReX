@@ -394,9 +394,9 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
         <div>
           {showSinglePage
             ? isLeftPage
-              ? `챕터 ${leftPage?.chapter_number}: ${leftPage?.chapter_title || "N/A"}`
-              : `챕터 ${rightPage?.chapter_number}: ${rightPage?.chapter_title || "N/A"}`
-            : `챕터 ${leftPage?.chapter_number}: ${leftPage?.chapter_title || "N/A"}`}
+              ? leftPage?.chapter_title || "N/A"
+              : rightPage?.chapter_title || "N/A"
+            : leftPage?.chapter_title || "N/A"}
         </div>
       </div>
       {openControlOverlay && (

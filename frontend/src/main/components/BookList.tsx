@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Card,
+  CardActionArea,
   CardActions,
   CardContent,
   Container,
@@ -46,25 +47,31 @@ export const BookListView = () => {
     <Container>
       <Box sx={{ margin: 1 }}>
         <Typography variant="h4" component="h1">
-          Avaliable Books
+          책 목록
         </Typography>
       </Box>
       <Divider sx={{ marginBottom: 2 }} />
       {bookList.books.length === 0 ? (
-        <Typography>No books available</Typography>
+        <Typography>등록된 책이 없습니다.</Typography>
       ) : (
         <BookListGrid>
           {bookList.books.map((book) => (
             <Card key={book.id}>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  {book.title}
-                </Typography>
-                <Typography color="text.secondary">By {book.author}</Typography>
-              </CardContent>
-              <CardActions>
-                <Button href={`/bookreader/read/${book.id}`}>Read</Button>
-              </CardActions>
+              <CardActionArea href={`/bookreader/read/${book.id}`}>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    {book.title}
+                  </Typography>
+                  <Typography color="text.secondary">
+                    저자: {book.author}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button href={`/bookreader/read/${book.id}`}>
+                    읽으러 가기
+                  </Button>
+                </CardActions>
+              </CardActionArea>
             </Card>
           ))}
         </BookListGrid>
@@ -81,7 +88,7 @@ export const BookListView = () => {
           <ArrowBackIos />
         </IconButton>
         <Typography sx={{ mx: 2 }}>
-          Page {page + 1} of {Math.ceil(bookList.total / BOOKS_PER_PAGE)}
+          {page + 1} of {Math.ceil(bookList.total / BOOKS_PER_PAGE)}
         </Typography>
         <IconButton
           disabled={bookList.offset + BOOKS_PER_PAGE >= bookList.total}
