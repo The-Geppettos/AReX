@@ -29,12 +29,21 @@ const pages = [
   },
 ];
 
+const noAdminPages = [
+  {
+    title: "Read Book",
+    icon: <AutoStories />,
+    url: "/*",
+    component: BookListView,
+  },
+];
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Layout pages={pages} />
+        <Layout pages={__NO_ADMIN__ === "true" ? noAdminPages : pages} />
       </BrowserRouter>
     </ThemeProvider>
   );

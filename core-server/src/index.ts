@@ -14,7 +14,7 @@ const main = async () => {
     }
 
     await container.httpServer.close();
-    await container.messageBroker.close();
+    if (container.messageBroker) await container.messageBroker.close();
     await container.coreDb.close();
     await container.vectorDb.close();
 
@@ -33,7 +33,7 @@ const main = async () => {
 
   await container.coreDb.initialize();
   await container.vectorDb.initialize();
-  await container.messageBroker.initialize();
+  if (container.messageBroker) await container.messageBroker.initialize();
   await container.httpServer.initialize();
 
   console.info("All components initialized successfully");

@@ -27,36 +27,6 @@ export class BookController extends Controller {
       },
     },
     {
-      path: "/api/books/unpublished/:offset/:limit",
-      method: "get",
-      handler: async (req, res) => {
-        const offset = parseInt(req.params.offset, 10);
-        const limit = parseInt(req.params.limit, 10);
-
-        try {
-          const books = await this.bookService.getAllBooks(offset, limit);
-          res.json(books);
-        } catch (error) {
-          res.status(500).json({ error: "Failed to fetch all books" });
-        }
-      },
-    },
-    {
-      path: "/api/books/all/:offset/:limit",
-      method: "get",
-      handler: async (req, res) => {
-        const offset = parseInt(req.params.offset, 10);
-        const limit = parseInt(req.params.limit, 10);
-
-        try {
-          const books = await this.bookService.getAllBooks(offset, limit);
-          res.json(books);
-        } catch (error) {
-          res.status(500).json({ error: "Failed to fetch all books" });
-        }
-      },
-    },
-    {
       path: "/api/book/:id",
       method: "get",
       handler: async (req, res) => {
@@ -68,32 +38,6 @@ export class BookController extends Controller {
           res.json(book);
         } catch (error) {
           res.status(500).json({ error: "Failed to fetch book" });
-        }
-      },
-    },
-    {
-      path: "/api/book/:id/publish",
-      method: "put",
-      handler: async (req, res) => {
-        const { id } = req.params;
-        try {
-          const book = await this.bookService.publishBook(id);
-          res.json(book);
-        } catch (error) {
-          res.status(500).json({ error: "Failed to publish book" });
-        }
-      },
-    },
-    {
-      path: "/api/book/:id/unpublish",
-      method: "put",
-      handler: async (req, res) => {
-        const { id } = req.params;
-        try {
-          const book = await this.bookService.unPublishBook(id);
-          res.json(book);
-        } catch (error) {
-          res.status(500).json({ error: "Failed to unpublish book" });
         }
       },
     },

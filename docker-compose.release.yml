@@ -8,9 +8,28 @@ services:
       - ./shared:/app/shared
       - ./.env:/app/.env
       - /app/frontend/node_modules
+      - /app/frontend/dist
     command: sh -c "npm install && npm run build && exec node start.js"
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    depends_on:
+      - core-server
+
+  frontend-no-admin:
+    image: node:lts-jod
+    container_name: frontend-no-admin
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/frontend/node_modules
+      - /app/frontend/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${FRONTEND_NO_ADMIN_PORT}:${FRONTEND_NO_ADMIN_PORT}"
+    environment:
+      NO_ADMIN: "true"
     depends_on:
       - core-server
 
@@ -24,9 +43,31 @@ services:
       - ./shared:/app/shared
       - ./.env:/app/.env
       - /app/core-server/node_modules
+      - /app/core-server/dist
     command: sh -c "npm install && npm run build && exec node start.js"
     ports:
       - "${CORE_SERVER_PORT}:${CORE_SERVER_PORT}"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - chromadb
+
+  core-server-no-admin:
+    image: node:lts-jod
+    container_name: core-server-no-admin
+    hostname: "${CORE_SERVER_NO_ADMIN_HOST}"
+    working_dir: /app/core-server
+    volumes:
+      - ./core-server:/app/core-server
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/core-server/node_modules
+      - /app/core-server/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${CORE_SERVER_NO_ADMIN_PORT}:${CORE_SERVER_NO_ADMIN_PORT}"
+    environment:
+      NO_ADMIN: "true"
     depends_on:
       - postgres
       - rabbitmq
