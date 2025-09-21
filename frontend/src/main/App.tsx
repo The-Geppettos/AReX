@@ -43,7 +43,11 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Layout pages={__NO_ADMIN__ === "true" ? noAdminPages : pages} />
+        <Layout
+          pages={
+            import.meta.env.VITE_NO_ADMIN === "true" ? noAdminPages : pages
+          }
+        />
       </BrowserRouter>
     </ThemeProvider>
   );

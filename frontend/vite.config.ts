@@ -13,7 +13,7 @@ dotenv.config({
   path: "../.env",
 });
 
-const noAdmin = process.env.NO_ADMIN === "true";
+const noAdmin = process.env.VITE_NO_ADMIN === "true";
 
 const frontendPort = noAdmin
   ? process.env.FRONTEND_NO_ADMIN_PORT
@@ -33,9 +33,6 @@ const coreServerProtocol = process.env.CORE_SERVER_PROTOCOL || "http";
 
 // https://vite.dev/config/
 export default defineConfig({
-  define: {
-    __NO_ADMIN__: JSON.stringify(process.env.NO_ADMIN || "false"),
-  },
   resolve: {
     alias: {
       "@src": resolve(__dirname, "src"),

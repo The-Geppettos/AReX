@@ -12,7 +12,7 @@ dotenv.config({
   path: "../.env",
 });
 
-const noAdmin = process.env.NO_ADMIN === "true";
+const noAdmin = process.env.VITE_NO_ADMIN === "true";
 
 const frontendPort = noAdmin
   ? process.env.FRONTEND_NO_ADMIN_PORT

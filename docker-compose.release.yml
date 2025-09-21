@@ -29,7 +29,7 @@ services:
     ports:
       - "${FRONTEND_NO_ADMIN_PORT}:${FRONTEND_NO_ADMIN_PORT}"
     environment:
-      NO_ADMIN: "true"
+      VITE_NO_ADMIN: "true"
     depends_on:
       - core-server
 
