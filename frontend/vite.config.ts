@@ -13,8 +13,8 @@ dotenv.config({
   path: "../.env",
 });
 
-const frontendDevPort = process.env.FRONTEND_DEV_PORT
-  ? parseInt(process.env.FRONTEND_DEV_PORT, 10)
+const frontendPort = process.env.FRONTEND_PORT
+  ? parseInt(process.env.FRONTEND_PORT, 10)
   : 3000;
 
 const coreServerHost = process.env.CORE_SERVER_HOST || "localhost";
@@ -57,7 +57,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: frontendDevPort,
+    port: frontendPort,
     proxy: {
       "/api": {
         target: `${coreServerProtocol}://${coreServerHost}:${coreServerPort}`,
