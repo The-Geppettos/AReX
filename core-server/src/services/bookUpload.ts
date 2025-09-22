@@ -14,8 +14,8 @@ import type { BookSearchCollection } from "@src/component/vectordb/collections/b
 
 import { generateId, insertMetadataInContent } from "@src/util";
 
-const CHUNK_SENTENCES = 5;
-const CHUNK_SENTENCE_OVERLAP = 2;
+const CHUNK_SENTENCES = 20;
+const CHUNK_SENTENCE_OVERLAP = 4;
 
 export class BookUploadService {
   private bookPagesTable;
