@@ -10,6 +10,7 @@ import {
   type SetStateAction,
   useRef,
   useEffect,
+  useCallback,
 } from "react";
 
 export type Chat = {
@@ -65,22 +66,25 @@ export const ChatBotProvider = ({
   };
 
   const [chats, setChats_] = useState<Chat[]>([]);
-  const setChats: Dispatch<SetStateAction<Chat[]>> = (value) => {
-    if (typeof value === "function") {
-      setChats_((prev) => {
-        const newValue = value(prev);
-        UserAPI.setCurrentChat(bookId, newValue).catch(() => {
+  const setChats: Dispatch<SetStateAction<Chat[]>> = useCallback(
+    (value) => {
+      if (typeof value === "function") {
+        setChats_((prev) => {
+          const newValue = value(prev);
+          UserAPI.setCurrentChat(bookId, newValue).catch(() => {
+            console.error("Failed to save current chat");
+          });
+          return newValue;
+        });
+      } else {
+        setChats_(value);
+        UserAPI.setCurrentChat(bookId, value).catch(() => {
           console.error("Failed to save current chat");
         });
-        return newValue;
-      });
-    } else {
-      setChats_(value);
-      UserAPI.setCurrentChat(bookId, value).catch(() => {
-        console.error("Failed to save current chat");
-      });
-    }
-  };
+      }
+    },
+    [bookId],
+  );
 
   const [selectedChatIdx, setSelectedChatIdx] = useState<number>(0);
   const chatControllers = useMemo(
@@ -159,7 +163,7 @@ export const ChatBotProvider = ({
           });
         },
       })),
-    [chats],
+    [chats, setChats],
   );
 
   const newChat = () => {
