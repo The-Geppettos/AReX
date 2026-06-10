@@ -57,10 +57,17 @@ export class NLPPreProcessConsumer extends ConsumerQueue {
         throw new Error("Invalid message format: color_code must be a string");
       }
 
-      await this.bookUploadService.updatePreProcessedData(
+      if (!Array.isArray(nlpPreProcessRes.result.character_list)) {
+        throw new Error(
+          "Invalid message format: character_list must be an array",
+        );
+      }
+
+      await this.bookUploadService.handlePreProcessResult(
         nlpPreProcessRes.book_page_id,
         nlpPreProcessRes.result.sentence_boundaries,
         nlpPreProcessRes.result.color_code,
+        nlpPreProcessRes.result.character_list,
       );
       acknowledge();
     } catch (error) {

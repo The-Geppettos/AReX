@@ -151,6 +151,7 @@ export class BookUploadService {
       offset_start: offsetStart,
       offset_end: offsetEnd,
       sentence_boundaries: "[]",
+      characters_info: "[]",
       color_code: "#FFFFFF",
       preprocessed: false,
       created_at: createdAt,
@@ -166,17 +167,7 @@ export class BookUploadService {
       throw new Error("Book not found");
     }
 
-    await this.nlpPreProcessProducer.sendMessage(
-      {
-        book_page_id: result.id,
-        content,
-        prev_content: prevContent,
-        language: book.language,
-      },
-      { persistent: true },
-    );
-
-    return { ...result, sentence_boundaries: [] };
+    return { ...result, sentence_boundaries: [], characters: [] };
   }
 
   private linkPrevSentenceBoundaries(
@@ -221,10 +212,11 @@ export class BookUploadService {
     return [newPrevSentenceBoundaries, nextSentenceBoundaries];
   }
 
-  async updatePreProcessedData(
+  async handlePreProcessResult(
     bookPageId: string,
     sentenceBoundaries: BookPage["sentence_boundaries"],
     colorCode: string,
+    characterList: { name: string; description: string }[],
   ) {
     const bookPage = await this.bookPagesTable.getById(bookPageId);
 
@@ -266,34 +258,9 @@ export class BookUploadService {
       }
     }
 
-    const nextPage = await this.bookPagesTable.getByBookIdAndPageNumber(
-      bookPage.book_id,
-      bookPage.page_number + 1,
-    );
-
-    if (nextPage && nextPage.preprocessed) {
-      const nextSentenceBoundaries = JSON.parse(
-        nextPage.sentence_boundaries,
-      ) as BookPage["sentence_boundaries"];
-
-      if (nextSentenceBoundaries[nextSentenceBoundaries.length - 1][0] < 0) {
-        const [newSentenceBoundaries, newNextSentenceBoundaries] =
-          this.linkPrevSentenceBoundaries(
-            sentenceBoundaries,
-            bookPage.content_length,
-            nextSentenceBoundaries,
-          );
-        sentenceBoundaries = newSentenceBoundaries;
-
-        await this.bookPagesTable.updateById(nextPage.id, {
-          sentence_boundaries: JSON.stringify(newNextSentenceBoundaries),
-          updated_at: updatedAt,
-        });
-      }
-    }
-
     await this.bookPagesTable.updateById(bookPageId, {
       sentence_boundaries: JSON.stringify(sentenceBoundaries),
+      characters_info: JSON.stringify(characterList),
       color_code: colorCode,
       preprocessed: true,
       updated_at: updatedAt,
@@ -305,9 +272,33 @@ export class BookUploadService {
     });
 
     if (preProcessedPages === book.total_pages) {
+      await this.booksTable.updateById(bookPage.book_id, {
+        status: "postprocessing",
+        updated_at: updatedAt,
+      });
+
       await this.postProcessProducer.sendMessage(
         {
           book_id: bookPage.book_id,
+        },
+        { persistent: true },
+      );
+    } else {
+      const nextPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+        bookPage.book_id,
+        bookPage.page_number + 1,
+      );
+
+      if (!nextPage) {
+        throw new Error("Next book page not found");
+      }
+      await this.nlpPreProcessProducer.sendMessage(
+        {
+          book_page_id: nextPage.id,
+          content: nextPage.content,
+          prev_content: bookPage.content,
+          language: book.language,
+          accumulated_characters: characterList,
         },
         { persistent: true },
       );
@@ -328,29 +319,30 @@ export class BookUploadService {
       throw new Error(`Failed to finish book upload for ID: ${bookId}`);
     }
 
-    const preProcessedPages = await this.bookPagesTable.count({
-      book_id: bookId,
-      preprocessed: true,
-    });
+    const firstPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+      bookId,
+      1,
+    );
 
-    if (preProcessedPages === totalPages) {
-      await this.postProcessProducer.sendMessage(
-        {
-          book_id: bookId,
-        },
-        { persistent: true },
-      );
+    if (!firstPage) {
+      throw new Error(`First page not found for book ID: ${bookId}`);
     }
+
+    await this.nlpPreProcessProducer.sendMessage(
+      {
+        book_page_id: firstPage.id,
+        content: firstPage.content,
+        prev_content: null,
+        language: book.language,
+        accumulated_characters: [],
+      },
+      { persistent: true },
+    );
 
     return book;
   }
 
   async postProcess(bookId: string) {
-    await this.booksTable.updateById(bookId, {
-      status: "postprocessing",
-      updated_at: new Date().toISOString(),
-    });
-
     await this.bookSearchCollection.deleteAllByBookId(bookId);
 
     const book = await this.booksTable.getById(bookId);
