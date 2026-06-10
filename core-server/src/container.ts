@@ -151,6 +151,7 @@ const characterAgentService = new CharacterAgentService(
   openaiApiKey,
   bookSearchCollection,
   booksTable,
+  bookPagesTable,
   chatHistoryTable,
 );
 

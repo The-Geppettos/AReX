@@ -1,113 +1,9 @@
 import type { Language } from "@shared/book";
 
-export const getUserCharacterExtractPrompt = (
-  userQuery: string,
-  language: Language,
-): {
-  systemPrompt: string;
-  userQueries: string[];
-} => {
-  switch (language) {
-    case "ko":
-      return {
-        systemPrompt: [
-          "당신은 사용자가 입력한 쿼리에서 등장인물의 이름을 추출하는 유용한 도우미입니다.",
-          "사용자가 입력한 쿼리에서 등장인물의 이름을 추출해주세요.",
-          "답변은 등장인물 한명의 이름만 포함되어야 합니다.",
-          "풀네임을 우선으로 사용해주세요.",
-        ].join("\n"),
-        userQueries: [userQuery],
-      };
-    case "en":
-      return {
-        systemPrompt: [
-          "You are a helpful assistant that extracts character names from user queries.",
-          "Please extract the character name from the user's query.",
-          "The answer should only include the name of one character.",
-          "Use the full name if available.",
-        ].join("\n"),
-        userQueries: [userQuery],
-      };
-    default:
-      throw new Error(`Unsupported language: ${language}`);
-  }
-};
-
-export const NO_CHARACTER_SPECIFIED: Record<Language, string> = {
-  ko: "등장인물 없음",
-  en: "No character specified",
-};
-
-export const getCharacterSearchCheckPrompt = (
-  language: Language,
-  userSpecifiedCharacter: string,
-  searchResult: string,
-): {
-  systemPrompt: string;
-  userQueries: string[];
-} => {
-  switch (language) {
-    case "ko":
-      return {
-        systemPrompt: [
-          "당신은 사용자가 지정한 등장인물이 책에 등장하는지 확인하는 유용한 도우미입니다.",
-          "사용자가 지정한 등장인물이 검색 결과에 포함되어 있다면 그 이름을 반환해주세요.",
-          "답변은 등장인물 한명의 이름만 포함되어야 합니다.",
-          "풀네임을 우선으로 사용해주세요.",
-          `사용자가 등장인물을 명시하지 않은 경우, 또는 사용자가 명시한 등장인물이 검색 결과에 나타나지 않는 경우 '${NO_CHARACTER_SPECIFIED[language]}'이라고 답변해주세요.`,
-        ].join("\n"),
-        userQueries: [
-          `사용자가 지정한 등장인물: ${userSpecifiedCharacter}`,
-          `검색결과: ${searchResult}`,
-        ],
-      };
-    case "en":
-      return {
-        systemPrompt: [
-          "You are a helpful assistant that checks if a user-specified character appears in the book.",
-          "If the specified character appears in the search results, return their name.",
-          "The answer should only include the name of one character.",
-          "Use the full name if available.",
-          `If the user did not specify a character, or if the specified character does not appear in the search results, respond with '${NO_CHARACTER_SPECIFIED[language]}'.`,
-        ].join("\n"),
-        userQueries: [
-          `User-specified character: ${userSpecifiedCharacter}`,
-          `Search results: ${searchResult}`,
-        ],
-      };
-    default:
-      throw new Error(`Unsupported language: ${language}`);
-  }
-};
-
-export const getCharacterTraitSearchQuery = (
-  language: Language,
-  characterName: string,
-): string[] => {
-  switch (language) {
-    case "ko":
-      return [
-        `${characterName}의 성격`,
-        `${characterName}의 성향`,
-        `${characterName}의 말투`,
-        `${characterName}의 별명`,
-      ];
-    case "en":
-      return [
-        `Personality traits of ${characterName}`,
-        `Disposition of ${characterName}`,
-        `Manner of speaking of ${characterName}`,
-        `Nickname of ${characterName}`,
-      ];
-    default:
-      throw new Error(`Unsupported language: ${language}`);
-  }
-};
-
 export const getCharacterChatPrompts = (
   language: Language,
   bookTitle: string,
-  characterName: string,
+  characterInfo: { name: string; description: string },
   userQuery: string,
   {
     search,
@@ -127,9 +23,8 @@ export const getCharacterChatPrompts = (
         systemPrompt: [
           "당신은 책에 등장하는 등장인물로 빙의되어 사용자의 질문에 답변하는 유용한 도우미입니다.",
           `책 제목: ${bookTitle}`,
-          `등장인물 이름: ${characterName}`,
-          "당신은 등장인물의 특징을 책에서 검색하였으며, 당신은 이 정보를 참고하여 그 다음 사용자의 질문에 대해 해당 등장인물의 관점에서 답변해야 합니다.",
-          `검색 내용은 원문 안의 맥락을 그대로 가져온 것이기에, 이 중에 ${characterName}의 특징에 해당되는 부분만 참고햐여 답변에 반영해주세요.`,
+          `등장인물 이름: ${characterInfo.name}`,
+          `등장인물 설명: ${characterInfo.description}`,
           "답변할 때는, 등장인물의 성격, 말투, 행동 등을 고려하여 답변해주세요.",
           "또한 당신은 사용자에게 답변하기 위해 필요한 추가적인 정보를 검색하였습니다. 해당 검색결과 또한 참고하여 답변해주세요.",
         ].join("\n"),
@@ -152,9 +47,8 @@ export const getCharacterChatPrompts = (
         systemPrompt: [
           "You are a helpful assistant embodying a character from a book, answering user questions from that character's perspective.",
           `Book Title: ${bookTitle}`,
-          `Character Name: ${characterName}`,
-          "The user will provide search results that reflect the character's traits, and you should use this information to answer the user's next questions from the character's perspective.",
-          `Since the search results are taken directly from the context within the original text, please refer only to the parts that pertain to ${characterName}'s traits and incorporate them into your answers.`,
+          `Character Name: ${characterInfo.name}`,
+          `Character Description: ${characterInfo.description}`,
           "When answering from the character's perspective, consider the character's personality, manner of speaking, and behavior.",
           "You have also searched for additional information needed to answer the user's question. Please refer to these search results when answering.",
         ].join("\n"),
@@ -181,7 +75,7 @@ export const getSearchQueryWritePrompts = (
   userQuery: string,
   language: Language,
   characterName: string,
-  historyText: string,
+  historyText?: string,
 ): {
   systemPrompt: string;
   userQueries: string[];

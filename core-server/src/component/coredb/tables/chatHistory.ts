@@ -12,6 +12,7 @@ export class ChatHistoryTable extends Table<ChatHistory> {
     id: "TEXT PRIMARY KEY",
     book_id: "TEXT NOT NULL",
     search_offset: "INTEGER NOT NULL",
+    search_page_number: "INTEGER NOT NULL",
     chat_title: "TEXT NOT NULL",
     chat_messages: "TEXT NOT NULL",
     chat_type: "TEXT NOT NULL",
