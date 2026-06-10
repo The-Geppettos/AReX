@@ -425,6 +425,9 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
               ? leftPage?.page_number || 0
               : rightPage?.page_number || leftPage?.page_number || 0
           }
+          pageInfo={
+            showSinglePage && isLeftPage ? leftPage : rightPage || leftPage
+          }
           totalPages={bookInfo?.total_pages || 0}
           prevPage={prevPage}
           nextPage={nextPage}

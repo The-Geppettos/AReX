@@ -34,6 +34,7 @@ export class AssistantAgentService {
     query: string,
     bookId: string,
     offset: number,
+    pageNumber: number,
     chatHistoryId?: string,
   ): Promise<BotMessage> {
     const book = await this.booksTable.getById(bookId);
@@ -154,6 +155,7 @@ export class AssistantAgentService {
         book_id: bookId,
         chat_title: "",
         search_offset: offset,
+        search_page_number: pageNumber,
         chat_messages: JSON.stringify(messages),
         chat_type: "assistant",
         created_at: new Date().toISOString(),

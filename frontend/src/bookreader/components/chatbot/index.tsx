@@ -4,17 +4,20 @@ import { CharacterChatBot } from "./CharacterChatBot";
 import { useChatBotContext } from "./context";
 import { useState } from "react";
 import sidebarUrl from "./sidebar.png";
+import type { BookPageDetail } from "@shared/book";
 
 export const ChatBot = ({
   bookId,
   offset,
   pageNumber,
   totalPages,
+  pageInfo,
 }: {
   bookId: string;
   offset: number;
   pageNumber: number;
   totalPages: number;
+  pageInfo: BookPageDetail | null;
 }) => {
   const {
     chatControllers,
@@ -106,6 +109,7 @@ export const ChatBot = ({
             offset={offset}
             pageNumber={pageNumber}
             chatController={chatController}
+            pageInfo={pageInfo}
           />
         )}
       </div>

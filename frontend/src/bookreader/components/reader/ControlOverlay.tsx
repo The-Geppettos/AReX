@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Modal } from "../modal";
 import { ChatBot } from "../chatbot";
+import type { BookPageDetail } from "@shared/book";
 
 type ControlOverlayProps = {
   showPrevPageControl: boolean;
@@ -9,6 +10,7 @@ type ControlOverlayProps = {
   offset: number;
   pageNumber: number;
   totalPages: number;
+  pageInfo: BookPageDetail | null;
   prevPage: () => void;
   nextPage: () => void;
 };
@@ -20,6 +22,7 @@ export const ControlOverlay = ({
   offset,
   pageNumber,
   totalPages,
+  pageInfo,
   prevPage,
   nextPage,
 }: ControlOverlayProps) => {
@@ -50,6 +53,7 @@ export const ControlOverlay = ({
             offset={offset}
             pageNumber={pageNumber}
             totalPages={totalPages}
+            pageInfo={pageInfo}
           />
         </div>
       </Modal>

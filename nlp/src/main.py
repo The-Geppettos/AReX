@@ -19,8 +19,10 @@ channel = None
 
 stop_triggered = False
 
+
 def signal_handler(sig, _frame):
-    print(f"Received {signal.Signals(sig).name}, closing connection and exiting...")
+    print(
+        f"Received {signal.Signals(sig).name}, closing connection and exiting...")
     global connection, channel, stop_triggered
 
     stop_triggered = True
@@ -39,6 +41,7 @@ def signal_handler(sig, _frame):
         except Exception as e:
             print(f"Error closing connection: {e}")
     sys.exit(0)
+
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
@@ -75,7 +78,9 @@ while not stop_triggered:
                     "result": analyze(
                         content=inputDict.get("content", ""),
                         prev_content=inputDict.get("prev_content"),
-                        language=inputDict.get("language", "en")
+                        language=inputDict.get("language", "en"),
+                        accum_characters=inputDict.get(
+                            "accumulated_characters", [])
                     )
                 }
             except Exception as e:

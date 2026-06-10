@@ -1,8 +1,10 @@
 export type UserMessage = {
   chat_id?: string;
+  character_name?: string;
   message: string;
   book_id: string;
   offset: number;
+  page_number: number;
 };
 
 export type BotMessage = {
@@ -14,6 +16,7 @@ export type ChatHistory = {
   id: string;
   book_id: string;
   search_offset: number;
+  search_page_number: number;
   chat_title: string;
   chat_messages: string;
   chat_type: (typeof CHAT_TYPES)[number];
@@ -27,14 +30,3 @@ export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
-
-export type CharacterCheck =
-  | {
-      has_character: false;
-    }
-  | {
-      has_character: true;
-      character_name: string;
-      chat_id: string;
-      message: string;
-    };

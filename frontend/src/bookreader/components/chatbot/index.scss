@@ -224,6 +224,10 @@
       margin: 0;
       border: none;
 
+      select {
+        margin-right: 0.5em;
+      }
+
       input {
         width: 100%;
         flex-grow: 1;

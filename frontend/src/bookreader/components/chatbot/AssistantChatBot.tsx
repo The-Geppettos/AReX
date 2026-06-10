@@ -23,6 +23,7 @@ export const AssistantChatBot = ({
     appendMessage,
     chatId,
     offset,
+    pageNumber,
     setChatId,
     setChatTitle,
     setOffset,
@@ -65,10 +66,12 @@ export const AssistantChatBot = ({
               message: message,
               book_id: bookId,
               offset: offset,
+              page_number: pageNumber,
               chat_id: chatId,
             };
             if (!chatId) {
               requestParams.offset = initialOffset;
+              requestParams.page_number = initialPageNumber;
             }
             setWaiting(true);
             const resMessage = await AgentAPI.askAssistant(requestParams);

@@ -29,15 +29,19 @@ export class BookPageService {
     if (!chapter) {
       throw new Error(`Chapter with ID ${bookPage.chapter_id} not found`);
     }
+    const { characters_info, ...rest } = bookPage;
 
     return {
-      ...bookPage,
+      ...rest,
       chapter_title: chapter.title,
       chapter_number: chapter.chapter_number,
       sentence_boundaries:
         bookPage.sentence_boundaries !== null
           ? JSON.parse(bookPage.sentence_boundaries)
           : null,
+      characters: JSON.parse(characters_info).map(
+        (charInfo: any) => charInfo.name,
+      ),
     };
   }
 }
