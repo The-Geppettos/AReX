@@ -1,8 +1,6 @@
 import type { ChatMessage, ChatType } from "@shared/chat";
 import { UserAPI } from "@src/api/user";
 import {
-  createContext,
-  useContext,
   useMemo,
   useState,
   type PropsWithChildren,
@@ -12,36 +10,8 @@ import {
   useEffect,
   useCallback,
 } from "react";
-
-export type Chat = {
-  chatId: string;
-  chatType: ChatType;
-  chatTitle: string;
-  messageInput: string;
-  messages: ChatMessage[];
-  chatKey: number;
-  pageNumber: number;
-  offset: number;
-  isNew: boolean;
-};
-
-export type ChatController = {
-  setChatId: (chatId: string) => void;
-  setChatTitle: (chatTitle: string) => void;
-  setChatType: (chatType: ChatType) => void;
-  setPageNumber: (pageNumber: number) => void;
-  setOffset: (offset: number) => void;
-  setMessageInput: (messageInput: string) => void;
-  appendMessage: (message: ChatMessage) => void;
-} & Chat;
-
-const ChatBotContext = createContext({
-  chatControllers: [] as ChatController[],
-  newChat: (() => {}) as () => void,
-  deleteChat: (() => {}) as (chatIdx: number) => void,
-  selectedChatIdx: 0,
-  setSelectedChatIdx: (() => {}) as Dispatch<SetStateAction<number>>,
-});
+import type { Chat } from "./type";
+import { ChatBotContext } from "./context";
 
 export const ChatBotProvider = ({
   children,
@@ -57,7 +27,6 @@ export const ChatBotProvider = ({
       chatType: "assistant",
       chatTitle: "새 채팅",
       pageNumber: 1,
-      offset: 0,
       messageInput: "",
       messages: [],
       chatKey: key,
@@ -127,16 +96,6 @@ export const ChatBotProvider = ({
             chatsCopy[idx] = {
               ...chatsCopy[idx],
               pageNumber: pageNumber,
-            };
-            return chatsCopy;
-          });
-        },
-        setOffset: (offset: number) => {
-          setChats((prev) => {
-            const chatsCopy = [...prev];
-            chatsCopy[idx] = {
-              ...chatsCopy[idx],
-              offset: offset,
             };
             return chatsCopy;
           });
@@ -220,9 +179,4 @@ export const ChatBotProvider = ({
       {children}
     </ChatBotContext.Provider>
   );
-};
-
-export const useChatBotContext = () => {
-  const context = useContext(ChatBotContext);
-  return context;
 };

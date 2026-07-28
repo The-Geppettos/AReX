@@ -23,15 +23,14 @@ export class AgentController extends Controller {
       method: "post",
       handler: async (req, res) => {
         try {
-          const { book_id, offset, page_number, message, chat_id } = req.body;
-          if (!book_id || !offset || !page_number || !message) {
+          const { book_id, page_number, message, chat_id } = req.body;
+          if (!book_id || !page_number || !message) {
             return res.status(400).json({
-              error: "book_id, offset, page_number, and message are required",
+              error: "book_id, page_number, and message are required",
             });
           }
           if (
             typeof book_id !== "string" ||
-            typeof offset !== "number" ||
             typeof page_number !== "number" ||
             typeof message !== "string"
           ) {
@@ -46,7 +45,6 @@ export class AgentController extends Controller {
           const response = await this.assistantAgentService.conversate(
             message,
             book_id,
-            offset,
             page_number,
             chat_id,
           );
@@ -63,22 +61,17 @@ export class AgentController extends Controller {
       method: "post",
       handler: async (req, res) => {
         try {
-          const {
-            book_id,
-            message,
-            chat_id,
-            offset,
-            page_number,
-            character_name,
-          } = req.body;
-          if (!book_id || !message || !offset || !page_number) {
+          const { book_id, message, chat_id, page_number, character_name } =
+            req.body;
+          if (!book_id || !message || !page_number) {
             return res
               .status(400)
-              .json({ error: "book_id, offset, and message are required" });
+              .json({
+                error: "book_id, message, and page_number are required",
+              });
           }
           if (
             typeof book_id !== "string" ||
-            typeof offset !== "number" ||
             typeof page_number !== "number" ||
             typeof message !== "string"
           ) {
@@ -106,10 +99,9 @@ export class AgentController extends Controller {
           const response = await this.characterAgentService.conversate(
             message,
             book_id,
-            offset,
             page_number,
-            chat_id,
             character_name,
+            chat_id,
           );
 
           res.status(200).json(response);

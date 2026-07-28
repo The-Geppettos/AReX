@@ -3,7 +3,6 @@ export type UserMessage = {
   character_name?: string;
   message: string;
   book_id: string;
-  offset: number;
   page_number: number;
 };
 
@@ -15,12 +14,12 @@ export type BotMessage = {
 export type ChatHistory = {
   id: string;
   book_id: string;
-  search_offset: number;
-  search_page_number: number;
+  last_page_read: number;
   chat_title: string;
   chat_messages: string;
   chat_type: (typeof CHAT_TYPES)[number];
   created_at: string;
+  updated_at: string;
 };
 
 export const CHAT_TYPES = ["assistant", "character"] as const;

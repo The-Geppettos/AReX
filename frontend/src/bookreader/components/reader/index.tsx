@@ -415,11 +415,6 @@ export const BookReader = ({ bookId }: BookReaderProps) => {
           showPrevPageControl={showPrevPageControl}
           showNextPageControl={showNextPageControl}
           bookId={bookId}
-          offset={
-            showSinglePage && isLeftPage
-              ? leftPage?.offset_end || 0
-              : rightPage?.offset_end || leftPage?.offset_end || 0
-          }
           pageNumber={
             showSinglePage && isLeftPage
               ? leftPage?.page_number || 0

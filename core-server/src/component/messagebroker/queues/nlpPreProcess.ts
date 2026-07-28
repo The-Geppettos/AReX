@@ -26,50 +26,60 @@ export class NLPPreProcessConsumer extends ConsumerQueue {
         message.content.toString(),
       ) as NLPPreProcessRes;
 
-      if (!nlpPreProcessRes.success) {
-        throw new Error("NLP pre-processing failed");
-      }
+      try {
+        if (!nlpPreProcessRes.success) {
+          throw new Error("NLP pre-processing failed");
+        }
 
-      if (!nlpPreProcessRes.book_page_id) {
-        throw new Error("Invalid message format: book_page_id is required");
-      }
+        if (!nlpPreProcessRes.book_page_id) {
+          throw new Error("Invalid message format: book_page_id is required");
+        }
 
-      if (!Array.isArray(nlpPreProcessRes.result.sentence_boundaries)) {
-        throw new Error(
-          "Invalid message format: sentence_boundaries must be an array",
-        );
-      }
-
-      for (const boundary of nlpPreProcessRes.result.sentence_boundaries) {
-        if (
-          !Array.isArray(boundary) ||
-          boundary.length !== 2 ||
-          typeof boundary[0] !== "number" ||
-          typeof boundary[1] !== "number"
-        ) {
+        if (!Array.isArray(nlpPreProcessRes.result.sentence_boundaries)) {
           throw new Error(
-            "Invalid sentence boundary format: must be an array of two numbers",
+            "Invalid message format: sentence_boundaries must be an array",
           );
         }
-      }
 
-      if (typeof nlpPreProcessRes.result.color_code !== "string") {
-        throw new Error("Invalid message format: color_code must be a string");
-      }
+        for (const boundary of nlpPreProcessRes.result.sentence_boundaries) {
+          if (
+            !Array.isArray(boundary) ||
+            boundary.length !== 2 ||
+            typeof boundary[0] !== "number" ||
+            typeof boundary[1] !== "number"
+          ) {
+            throw new Error(
+              "Invalid sentence boundary format: must be an array of two numbers",
+            );
+          }
+        }
 
-      if (!Array.isArray(nlpPreProcessRes.result.character_list)) {
-        throw new Error(
-          "Invalid message format: character_list must be an array",
+        if (typeof nlpPreProcessRes.result.color_code !== "string") {
+          throw new Error(
+            "Invalid message format: color_code must be a string",
+          );
+        }
+
+        if (!Array.isArray(nlpPreProcessRes.result.character_list)) {
+          throw new Error(
+            "Invalid message format: character_list must be an array",
+          );
+        }
+
+        await this.bookUploadService.handlePreProcessResult(
+          nlpPreProcessRes.book_page_id,
+          nlpPreProcessRes.result.sentence_boundaries,
+          nlpPreProcessRes.result.color_code,
+          nlpPreProcessRes.result.character_list,
         );
+        acknowledge();
+      } catch (error) {
+        console.error("Error processing NLP pre-process result:", error);
+        await this.bookUploadService.failBookPage(
+          nlpPreProcessRes.book_page_id,
+        );
+        acknowledge();
       }
-
-      await this.bookUploadService.handlePreProcessResult(
-        nlpPreProcessRes.book_page_id,
-        nlpPreProcessRes.result.sentence_boundaries,
-        nlpPreProcessRes.result.color_code,
-        nlpPreProcessRes.result.character_list,
-      );
-      acknowledge();
     } catch (error) {
       console.error("Error processing message:", error);
     }

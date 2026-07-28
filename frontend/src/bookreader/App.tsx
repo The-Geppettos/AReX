@@ -3,7 +3,7 @@ import "./App.scss";
 import { BookReader } from "./components/reader";
 import { BookPagePreview } from "./components/BookPagePreview";
 import { ModalProvider } from "./components/modal";
-import { ChatBotProvider } from "./components/chatbot/context";
+import { ChatBotProvider } from "./components/chatbot/provider";
 
 const BookReaderWrapper = () => {
   const { bookId } = useParams();

@@ -1,20 +1,18 @@
 import { CHAT_TYPES, type ChatType } from "@shared/chat";
 import { AssistantChatBot } from "./AssistantChatBot";
 import { CharacterChatBot } from "./CharacterChatBot";
-import { useChatBotContext } from "./context";
+import { useChatBotContext } from "./hook";
 import { useState } from "react";
 import sidebarUrl from "./sidebar.png";
 import type { BookPageDetail } from "@shared/book";
 
 export const ChatBot = ({
   bookId,
-  offset,
   pageNumber,
   totalPages,
   pageInfo,
 }: {
   bookId: string;
-  offset: number;
   pageNumber: number;
   totalPages: number;
   pageInfo: BookPageDetail | null;
@@ -98,7 +96,6 @@ export const ChatBot = ({
         {chatController.chatType === "assistant" && (
           <AssistantChatBot
             bookId={bookId}
-            offset={offset}
             pageNumber={pageNumber}
             chatController={chatController}
           />
@@ -106,7 +103,6 @@ export const ChatBot = ({
         {chatController.chatType === "character" && (
           <CharacterChatBot
             bookId={bookId}
-            offset={offset}
             pageNumber={pageNumber}
             chatController={chatController}
             pageInfo={pageInfo}
