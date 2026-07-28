@@ -52,12 +52,9 @@ Text chunk:
         try:
             # Classify theme color for the previous chunk
             result = chain.invoke({"text": text})
-            theme_color = result.theme_color
+            return result.theme_color
         except Exception as e:
-            print(f"Error classifying theme color': {e}")
-            theme_color = "#FFFFFF"  # Default to white on error
-
-        return theme_color
+            raise Exception(f"Error classifying theme color: {e}")
 
     def character_analysis(self, cur_page: str, prev_page: str | None,
                            accum_characters: list[dict]) -> list[dict]:
@@ -113,10 +110,6 @@ Accumulated character information:
                 "prev_page": prev_page,
                 "accum_characters": accum_characters,
             })
-            updated_characters = result.dict()["characters"]
+            return result.dict()["characters"]
         except Exception as e:
-            print(f"Error analyzing characters: {e}")
-            # Retain previous character information on error
-            updated_characters = accum_characters
-
-        return updated_characters
+            raise Exception(f"Error analyzing characters: {e}")

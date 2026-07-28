@@ -1,12 +1,12 @@
 import amqp from "amqplib";
-import { ConsumerQueue, Queue } from "./queues/abstract";
+import { Queue } from "./queues/abstract";
 
 const RETRY_INTERVAL = 5000;
 
 export type ConsumeCallback = (
   msg: amqp.ConsumeMessage,
   acknowledge: () => void,
-) => void;
+) => Promise<void>;
 
 export class MessageBroker {
   private connectionPromise: Promise<amqp.ChannelModel | null> =
@@ -147,13 +147,20 @@ export class MessageBroker {
       }
 
       for (const [queueName, consumeCallback, options] of this.consumers) {
-        const callback = (msg: amqp.ConsumeMessage | null) => {
+        const callback = async (msg: amqp.ConsumeMessage | null) => {
           if (!msg) {
             console.warn(`Received null message for queue: ${queueName}`);
             return;
           }
           const acknowledge = () => channel.ack(msg);
-          consumeCallback(msg, acknowledge);
+          try {
+            await consumeCallback(msg, acknowledge);
+          } catch (error) {
+            console.error(
+              `Error processing message from queue ${queueName}:`,
+              error,
+            );
+          }
         };
         await channel.consume(queueName, callback, options);
         console.info(
