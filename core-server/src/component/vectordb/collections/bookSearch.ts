@@ -28,15 +28,22 @@ export class BookSearchCollection extends Collection {
   async search(
     queryTexts: string[],
     bookId: string,
-    offset: number,
     limit: number,
+    pageFrom: number,
+    pageTo: number,
   ) {
     if (!this.collection) {
       throw new Error("Collection is not initialized.");
     }
     const results = await this.collection.query<BookSearchMetadata>({
       queryTexts: queryTexts,
-      where: { $and: [{ book_id: bookId }, { offset: { $lt: offset } }] },
+      where: {
+        $and: [
+          { book_id: bookId },
+          { page_number: { $gte: pageFrom } },
+          { page_number: { $lte: pageTo } },
+        ],
+      },
       nResults: limit,
     });
     return results;

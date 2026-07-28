@@ -18,6 +18,11 @@ import { BookUploadService } from "@src/services/bookUpload";
 import { AssistantAgentService } from "@src/services/agents/assistant";
 import { CharacterAgentService } from "@src/services/agents/character";
 
+import { BookController } from "@src//controllers/books";
+import { BookPageController } from "@src/controllers/bookPages";
+import { AgentController } from "@src/controllers/agents";
+import { BookUploadController } from "@src/controllers/bookUpload";
+
 import { MessageBroker } from "@src/component/messagebroker";
 import {
   NLPPreProcessConsumer,
@@ -28,6 +33,7 @@ import {
   PostProcessProducer,
 } from "@src/component/messagebroker/queues/postProcess";
 import { ChatHistoryTable } from "./component/coredb/tables/chatHistory";
+import { BookManageController } from "./controllers/bookManage";
 
 dotenv.config({
   path: "../.env",
@@ -35,7 +41,10 @@ dotenv.config({
 
 // -- ENV Variables --
 
-const core_server_port = process.env.CORE_SERVER_PORT || "3001";
+const noAdmin = process.env.NO_ADMIN === "true";
+const core_server_port = noAdmin
+  ? process.env.CORE_SERVER_NO_ADMIN_PORT || "3001"
+  : process.env.CORE_SERVER_PORT || "13001";
 
 const postgres_host = process.env.POSTGRES_HOST || "localhost";
 const postgres_port = process.env.POSTGRES_PORT
@@ -88,47 +97,80 @@ export const vectorDb = new VectorDB(
 
 const bookSearchCollection = new BookSearchCollection(vectorDb);
 
-const messageBroker = new MessageBroker(rbmq_host, rbmq_port);
-
-const nlpPreProcessProducer = new NLPPreProcessProducer(messageBroker);
-const nlpPreProcessConsumer = new NLPPreProcessConsumer(messageBroker);
-
-const postProcessProducer = new PostProcessProducer(messageBroker);
-const postProcessConsumer = new PostProcessConsumer(messageBroker);
-
 const bookService = new BookService(booksTable);
 const bookPageService = new BookPageService(bookPagesTable, bookChaptersTable);
-const bookUploadService = new BookUploadService(
-  bookPagesTable,
-  booksTable,
-  bookChaptersTable,
-  nlpPreProcessProducer,
-  postProcessProducer,
-  bookSearchCollection,
-);
+
+let messageBroker = null;
+
+if (!noAdmin) {
+  messageBroker = new MessageBroker(rbmq_host, rbmq_port);
+
+  const nlpPreProcessProducer = new NLPPreProcessProducer(messageBroker);
+  const postProcessProducer = new PostProcessProducer(messageBroker);
+
+  const bookUploadService = new BookUploadService(
+    bookPagesTable,
+    booksTable,
+    bookChaptersTable,
+    nlpPreProcessProducer,
+    postProcessProducer,
+    bookSearchCollection,
+  );
+  const nlpPreProcessConsumer = new NLPPreProcessConsumer(
+    messageBroker,
+    bookUploadService,
+  );
+  const postProcessConsumer = new PostProcessConsumer(
+    messageBroker,
+    bookUploadService,
+  );
+  nlpPreProcessConsumer.registerConsumer();
+  postProcessConsumer.registerConsumer();
+
+  const bookUploadController = new BookUploadController(
+    httpServer,
+    bookUploadService,
+  );
+
+  bookUploadController.registerRoutes();
+
+  const bookManageController = new BookManageController(
+    httpServer,
+    bookService,
+  );
+  bookManageController.registerRoutes();
+}
+
 const assistantAgentService = new AssistantAgentService(
   openaiApiKey,
   bookSearchCollection,
   booksTable,
+  bookPagesTable,
   chatHistoryTable,
 );
 const characterAgentService = new CharacterAgentService(
   openaiApiKey,
   bookSearchCollection,
   booksTable,
+  bookPagesTable,
   chatHistoryTable,
 );
+
+const bookController = new BookController(httpServer, bookService);
+const bookPageController = new BookPageController(httpServer, bookPageService);
+const agentController = new AgentController(
+  httpServer,
+  assistantAgentService,
+  characterAgentService,
+);
+
+bookController.registerRoutes();
+bookPageController.registerRoutes();
+agentController.registerRoutes();
 
 export default {
   httpServer,
   coreDb,
   vectorDb,
   messageBroker,
-  nlpPreProcessConsumer,
-  postProcessConsumer,
-  bookService,
-  bookPageService,
-  bookUploadService,
-  assistantAgentService,
-  characterAgentService,
 };

@@ -1,170 +1,139 @@
 import {
-  createContext,
   type PropsWithChildren,
-  useCallback,
+  createContext,
   useContext,
-  useEffect,
   useRef,
-  useState,
+  useEffect,
 } from "react";
+import { createPortal } from "react-dom";
 
-const Z_INDEX_BASE = 20;
+const Portal = ({
+  targetRef,
+  children,
+}: PropsWithChildren<{ targetRef: React.RefObject<HTMLElement> }>) => {
+  if (!targetRef.current) return null;
+  return createPortal(children, targetRef.current);
+};
 
 const ModalContext = createContext({
-  openModal: (() => 0) as (element: Element) => number,
-  closeModal(_element: Element): void {},
+  wrapperRef: {} as React.RefObject<HTMLElement>,
 });
 
 export const ModalProvider = ({ children }: PropsWithChildren) => {
-  const [modalElements, setModalElements] = useState<Element[]>([]);
-
-  const modalFocusTrapInitialized = useRef(false);
-
-  const openModal = useCallback((element: Element) => {
-    setModalElements((modalElements) => {
-      return [...modalElements, element];
-    });
-    modalFocusTrapInitialized.current = false;
-    return modalElements.length;
-  }, []);
-  const closeModal = useCallback((element: Element) => {
-    setModalElements((modalElements) => {
-      if (modalElements[modalElements.length - 1] !== element) {
-        console.warn(
-          "Trying to close a modal that is not the last one opened.",
-        );
-        return modalElements;
-      }
-      return modalElements.slice(0, -1);
-    });
-  }, []);
+  const wrapperRef = useRef({} as HTMLDivElement);
 
   useEffect(() => {
-    if (modalElements.length === 0) return;
-
     const focusTrap = (e: KeyboardEvent) => {
       if (e.key === "Tab") {
-        const lastModalElement = modalElements[modalElements.length - 1];
+        const lastModalElement = wrapperRef.current.lastChild as HTMLElement;
+
+        if (!lastModalElement) return;
 
         const FocusableElements = lastModalElement.querySelectorAll(
           "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
-        );
+        ) as NodeListOf<HTMLElement>;
 
         if (FocusableElements.length === 0) {
           e.preventDefault();
-        } else if (!modalFocusTrapInitialized.current) {
+          return;
+        }
+
+        if (!document.activeElement) {
           e.preventDefault();
-          modalFocusTrapInitialized.current = true;
-          (FocusableElements[0] as HTMLElement).focus();
-        } else if (!document.activeElement) {
+          FocusableElements[0].focus();
+          return;
+        }
+
+        let idx = -1;
+
+        for (let i = 0; i < FocusableElements.length; i++) {
+          if (FocusableElements[i] === document.activeElement) {
+            idx = i;
+            break;
+          }
+        }
+
+        if (idx === -1) {
           e.preventDefault();
-          (FocusableElements[0] as HTMLElement).focus();
-        } else if (
-          document.activeElement === FocusableElements[0] &&
-          e.shiftKey
-        ) {
-          e.preventDefault();
-          (
-            FocusableElements[FocusableElements.length - 1] as HTMLElement
-          ).focus();
-        } else if (
-          document.activeElement ===
-            FocusableElements[FocusableElements.length - 1] &&
-          !e.shiftKey
-        ) {
-          e.preventDefault();
-          (FocusableElements[0] as HTMLElement).focus();
+          FocusableElements[0].focus();
+          return;
+        }
+
+        if (e.shiftKey) {
+          if (idx === 0) {
+            e.preventDefault();
+            FocusableElements[FocusableElements.length - 1].focus();
+          }
+        } else {
+          if (idx === FocusableElements.length - 1) {
+            e.preventDefault();
+            FocusableElements[0].focus();
+          }
         }
       }
     };
 
-    const onFocus = () => {
-      modalFocusTrapInitialized.current = true;
-    };
-
     window.addEventListener("keydown", focusTrap);
-    window.addEventListener("focus", onFocus, true);
 
     return () => {
       window.removeEventListener("keydown", focusTrap);
-      window.removeEventListener("focus", onFocus, true);
     };
-  }, [modalElements]);
+  }, []);
 
   return (
-    <ModalContext.Provider
-      value={{
-        openModal,
-        closeModal,
-      }}
-    >
+    <ModalContext.Provider value={{ wrapperRef }}>
       {children}
+      <div ref={wrapperRef}></div>
     </ModalContext.Provider>
   );
 };
 
-export const Modal = ({
-  open,
-  onClose,
-  closeOnClickBackground = true,
-  showCloseButton = true,
-  children,
-  className,
-}: PropsWithChildren<{
-  open: boolean;
-  onClose: () => void;
+type ModalProps = PropsWithChildren<{
+  state: [boolean, (n: boolean) => void];
   closeOnClickBackground?: boolean;
   showCloseButton?: boolean;
   className?: string;
-}>) => {
-  const { closeModal, openModal } = useContext(ModalContext);
-  const modalRef = useRef<HTMLDivElement>(null);
+}>;
 
-  const [modalIndex, setModalIndex] = useState<number>(0);
-
-  useEffect(() => {
-    if (open) {
-      if (!modalRef.current) {
-        console.error("Modal element is not initialized.");
-        return;
-      }
-      const modalElement = modalRef.current;
-      const modalIdx = openModal(modalElement);
-      setModalIndex(modalIdx);
-      return () => closeModal(modalElement);
-    }
-  }, [open]);
+export const Modal = ({
+  children,
+  closeOnClickBackground = true,
+  showCloseButton = true,
+  state: [open, setOpen],
+  className,
+}: ModalProps) => {
+  const { wrapperRef } = useContext(ModalContext);
 
   if (!open) return null;
 
   return (
-    <div
-      className="modal-background"
-      ref={modalRef}
-      style={{ zIndex: Z_INDEX_BASE + modalIndex }}
-      onClick={() => {
-        if (closeOnClickBackground) onClose();
-      }}
-    >
+    <Portal targetRef={wrapperRef}>
       <div
-        className={`modal${className ? ` ${className}` : ""}`}
-        onClick={(e) => {
-          e.stopPropagation();
+        className="modal-background"
+        onClick={() => {
+          if (closeOnClickBackground) setOpen(false);
         }}
       >
-        {showCloseButton && (
-          <div className="modal-close-button-wrapper">
-            <button
-              className="modal-close-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-            ></button>
-          </div>
-        )}
-        {children}
+        <div
+          className={`modal${className ? ` ${className}` : ""}`}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          {showCloseButton && (
+            <div className="modal-close-button-wrapper">
+              <button
+                className="modal-close-button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                }}
+              ></button>
+            </div>
+          )}
+          {children}
+        </div>
       </div>
-    </div>
+    </Portal>
   );
 };

@@ -36,8 +36,10 @@ export interface Book {
   updated_at: string;
 }
 
-export interface BookUpload
-  extends Pick<Book, "title" | "author" | "language"> {}
+export interface BookUpload extends Pick<
+  Book,
+  "title" | "author" | "language"
+> {}
 
 export interface BookList {
   books: Book[];
@@ -54,8 +56,10 @@ export interface BookChapter {
   created_at: string;
 }
 
-export interface BookChapterUpload
-  extends Pick<BookChapter, "book_id" | "chapter_number" | "title"> {}
+export interface BookChapterUpload extends Pick<
+  BookChapter,
+  "book_id" | "chapter_number" | "title"
+> {}
 
 export interface BookPage {
   id: string;
@@ -67,6 +71,7 @@ export interface BookPage {
   offset_start: number;
   offset_end: number;
   sentence_boundaries: [number, number][];
+  characters: string[];
   page_transition_type: PageTransitionType;
   color_code: string;
   preprocessed: boolean;
@@ -74,19 +79,18 @@ export interface BookPage {
   updated_at: string;
 }
 
-export interface BookPageSchema extends Omit<BookPage, "sentence_boundaries"> {
+export interface BookPageSchema extends Omit<
+  BookPage,
+  "sentence_boundaries" | "characters"
+> {
   sentence_boundaries: string;
+  characters_info: string;
 }
 
-export interface BookPageUpload
-  extends Pick<
-    BookPage,
-    | "book_id"
-    | "chapter_id"
-    | "content"
-    | "page_number"
-    | "page_transition_type"
-  > {}
+export interface BookPageUpload extends Pick<
+  BookPage,
+  "book_id" | "chapter_id" | "content" | "page_number" | "page_transition_type"
+> {}
 
 export interface BookPageDetail extends BookPage {
   chapter_title: string;

@@ -28,6 +28,7 @@ type LayoutProps = {
 export const Layout = ({ pages }: LayoutProps) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const singlePage = pages.length === 1;
 
   return (
     <>
@@ -36,15 +37,17 @@ export const Layout = ({ pages }: LayoutProps) => {
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       >
         <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={() => setDrawerOpen((prev) => !prev)}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
+          {!singlePage && (
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={() => setDrawerOpen((prev) => !prev)}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography
             variant="h6"
             noWrap
@@ -61,38 +64,43 @@ export const Layout = ({ pages }: LayoutProps) => {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-      >
-        <Box sx={{ width: 250 }}>
-          <Box sx={{ display: "flex", alignItems: "center", padding: 2 }}>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              AReX
-            </Typography>
-            <IconButton onClick={() => setDrawerOpen(false)}>
-              <CloseIcon />
-            </IconButton>
+
+      {!singlePage && (
+        <Drawer
+          anchor="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        >
+          <Box sx={{ width: 250 }}>
+            <Box sx={{ display: "flex", alignItems: "center", padding: 2 }}>
+              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                AReX
+              </Typography>
+              <IconButton onClick={() => setDrawerOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            <Divider />
+            <List>
+              {pages.map((item) => (
+                <ListItem key={item.url}>
+                  <ListItemButton
+                    onClick={() => {
+                      setDrawerOpen(false);
+                      navigate(item.url);
+                    }}
+                  >
+                    {item.icon ? (
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                    ) : null}
+                    <ListItemText primary={item.title} />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
           </Box>
-          <Divider />
-          <List>
-            {pages.map((item) => (
-              <ListItem key={item.url}>
-                <ListItemButton
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    navigate(item.url);
-                  }}
-                >
-                  {item.icon ? <ListItemIcon>{item.icon}</ListItemIcon> : null}
-                  <ListItemText primary={item.title} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
+        </Drawer>
+      )}
 
       {/* Main Content */}
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>

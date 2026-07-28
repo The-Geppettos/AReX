@@ -6,7 +6,7 @@ const RETRY_INTERVAL = 5000;
 export type ConsumeCallback = (
   msg: amqp.ConsumeMessage,
   acknowledge: () => void,
-) => void;
+) => Promise<void>;
 
 export class MessageBroker {
   private connectionPromise: Promise<amqp.ChannelModel | null> =
@@ -70,7 +70,10 @@ export class MessageBroker {
           await connection.close();
           resolve(null);
         } catch (error) {
-          console.error("Failed to close MessageBroker(RabbitMQ) connection:", error);
+          console.error(
+            "Failed to close MessageBroker(RabbitMQ) connection:",
+            error,
+          );
           resolve(null);
         }
         return;
@@ -144,16 +147,25 @@ export class MessageBroker {
       }
 
       for (const [queueName, consumeCallback, options] of this.consumers) {
-        const callback = (msg: amqp.ConsumeMessage | null) => {
+        const callback = async (msg: amqp.ConsumeMessage | null) => {
           if (!msg) {
             console.warn(`Received null message for queue: ${queueName}`);
             return;
           }
           const acknowledge = () => channel.ack(msg);
-          consumeCallback(msg, acknowledge);
+          try {
+            await consumeCallback(msg, acknowledge);
+          } catch (error) {
+            console.error(
+              `Error processing message from queue ${queueName}:`,
+              error,
+            );
+          }
         };
         await channel.consume(queueName, callback, options);
-        console.info(`Consumer for queue ${queueName} registered successfully.`);
+        console.info(
+          `Consumer for queue ${queueName} registered successfully.`,
+        );
       }
 
       if (this.closeTriggered) {
@@ -161,7 +173,10 @@ export class MessageBroker {
           await channel.close();
           resolve(null);
         } catch (error) {
-          console.error("Failed to close MessageBroker(RabbitMQ) channel:", error);
+          console.error(
+            "Failed to close MessageBroker(RabbitMQ) channel:",
+            error,
+          );
           resolve(null);
         }
         return;
@@ -205,7 +220,9 @@ export class MessageBroker {
   }
 
   async initialize() {
-    console.info(`Connecting to MessageBroker(RabbitMQ) at ${this.host}:${this.port}...`);
+    console.info(
+      `Connecting to MessageBroker(RabbitMQ) at ${this.host}:${this.port}...`,
+    );
 
     this.connectionPromise = new Promise<amqp.ChannelModel | null>(
       (resolve) => {
@@ -231,7 +248,10 @@ export class MessageBroker {
       try {
         await channel.close();
       } catch (error) {
-        console.error("Failed to close MessageBroker(RabbitMQ) channel:", error);
+        console.error(
+          "Failed to close MessageBroker(RabbitMQ) channel:",
+          error,
+        );
       }
     }
 
@@ -241,7 +261,10 @@ export class MessageBroker {
       try {
         await connection.close();
       } catch (error) {
-        console.error("Failed to close MessageBroker(RabbitMQ) connection:", error);
+        console.error(
+          "Failed to close MessageBroker(RabbitMQ) connection:",
+          error,
+        );
       }
     }
 

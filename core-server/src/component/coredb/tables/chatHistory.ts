@@ -11,11 +11,12 @@ export class ChatHistoryTable extends Table<ChatHistory> {
   protected schema = {
     id: "TEXT PRIMARY KEY",
     book_id: "TEXT NOT NULL",
-    search_offset: "INTEGER NOT NULL",
+    last_page_read: "INTEGER NOT NULL",
     chat_title: "TEXT NOT NULL",
     chat_messages: "TEXT NOT NULL",
     chat_type: "TEXT NOT NULL",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
+    updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
   };
 
   constructor(coreDb: CoreDB, booksTable: BooksTable) {

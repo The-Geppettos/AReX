@@ -20,6 +20,7 @@ export class BookPagesTable extends Table<BookPageSchema> {
     offset_end: "INTEGER NOT NULL",
     page_transition_type: "TEXT NOT NULL",
     sentence_boundaries: "TEXT NOT NULL",
+    characters_info: "TEXT NOT NULL DEFAULT '[]'",
     color_code: "TEXT NOT NULL",
     preprocessed: "BOOLEAN NOT NULL",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",

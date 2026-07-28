@@ -12,7 +12,7 @@ import type { BooksTable } from "@src/component/coredb/tables/books";
 import type { PostProcessProducer } from "@src/component/messagebroker/queues/postProcess";
 import type { BookSearchCollection } from "@src/component/vectordb/collections/bookSearch";
 
-import { generateId, insertMetadataInContent } from "@src/util";
+import { generateId } from "@src/util";
 
 const CHUNK_SENTENCES = 5;
 const CHUNK_SENTENCE_OVERLAP = 2;
@@ -50,7 +50,7 @@ export class BookUploadService {
     const createdAt = new Date().toISOString();
     const updatedAt = createdAt;
 
-    const books = await this.booksTable.insert({
+    const book = await this.booksTable.insert({
       id,
       title,
       author,
@@ -61,11 +61,11 @@ export class BookUploadService {
       total_pages: 0,
     });
 
-    if (books === null) {
+    if (book === null) {
       throw new Error("Failed to create book");
     }
 
-    return books;
+    return book;
   }
 
   async uploadChapter(
@@ -76,7 +76,7 @@ export class BookUploadService {
     const id = generateId();
     const createdAt = new Date().toISOString();
 
-    const chapters = await this.bookChaptersTable.insert({
+    const chapter = await this.bookChaptersTable.insert({
       id,
       book_id: bookId,
       chapter_number: chapterNumber,
@@ -84,11 +84,11 @@ export class BookUploadService {
       created_at: createdAt,
     });
 
-    if (chapters === null) {
+    if (chapter === null) {
       throw new Error("Failed to create book chapter");
     }
 
-    return chapters;
+    return chapter;
   }
 
   async uploadPage(
@@ -108,7 +108,6 @@ export class BookUploadService {
     }
 
     let offsetStart = 0;
-    let prevContent = null;
 
     if (pageNumber > 1) {
       const prevPage = await this.bookPagesTable.getByBookIdAndPageNumber(
@@ -116,23 +115,7 @@ export class BookUploadService {
         pageNumber - 1,
       );
 
-      if (prevPage) {
-        switch (pageTransitionType) {
-          case "line_break":
-            prevContent = prevPage.content + "\n";
-            break;
-          case "space":
-            prevContent = prevPage.content + " ";
-            break;
-          case "intra_word_break":
-            prevContent = prevPage.content;
-            break;
-          case "new_chapter":
-            break;
-          default:
-            throw new Error("Invalid page transition type");
-        }
-      } else {
+      if (!prevPage) {
         throw new Error("Previous page not found");
       }
       offsetStart = prevPage.offset_end;
@@ -151,6 +134,7 @@ export class BookUploadService {
       offset_start: offsetStart,
       offset_end: offsetEnd,
       sentence_boundaries: "[]",
+      characters_info: "[]",
       color_code: "#FFFFFF",
       preprocessed: false,
       created_at: createdAt,
@@ -166,17 +150,44 @@ export class BookUploadService {
       throw new Error("Book not found");
     }
 
+    return { ...result, sentence_boundaries: [], characters: [] };
+  }
+
+  async finishUpload(bookId: string): Promise<Book> {
+    const totalPages = await this.bookPagesTable.count({ book_id: bookId });
+    const updatedAt = new Date().toISOString();
+
+    const book = await this.booksTable.updateById(bookId, {
+      status: "preprocessing",
+      total_pages: totalPages,
+      updated_at: updatedAt,
+    });
+
+    if (!book) {
+      throw new Error(`Failed to finish book upload for ID: ${bookId}`);
+    }
+
+    const firstPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+      bookId,
+      1,
+    );
+
+    if (!firstPage) {
+      throw new Error(`First page not found for book ID: ${bookId}`);
+    }
+
     await this.nlpPreProcessProducer.sendMessage(
       {
-        book_page_id: result.id,
-        content,
-        prev_content: prevContent,
+        book_page_id: firstPage.id,
+        content: firstPage.content,
+        prev_content: null,
         language: book.language,
+        accumulated_characters: [],
       },
       { persistent: true },
     );
 
-    return { ...result, sentence_boundaries: [] };
+    return book;
   }
 
   private linkPrevSentenceBoundaries(
@@ -221,10 +232,11 @@ export class BookUploadService {
     return [newPrevSentenceBoundaries, nextSentenceBoundaries];
   }
 
-  async updatePreProcessedData(
+  async handlePreProcessResult(
     bookPageId: string,
     sentenceBoundaries: BookPage["sentence_boundaries"],
     colorCode: string,
+    characterList: { name: string; description: string }[],
   ) {
     const bookPage = await this.bookPagesTable.getById(bookPageId);
 
@@ -266,34 +278,9 @@ export class BookUploadService {
       }
     }
 
-    const nextPage = await this.bookPagesTable.getByBookIdAndPageNumber(
-      bookPage.book_id,
-      bookPage.page_number + 1,
-    );
-
-    if (nextPage && nextPage.preprocessed) {
-      const nextSentenceBoundaries = JSON.parse(
-        nextPage.sentence_boundaries,
-      ) as BookPage["sentence_boundaries"];
-
-      if (nextSentenceBoundaries[nextSentenceBoundaries.length - 1][0] < 0) {
-        const [newSentenceBoundaries, newNextSentenceBoundaries] =
-          this.linkPrevSentenceBoundaries(
-            sentenceBoundaries,
-            bookPage.content_length,
-            nextSentenceBoundaries,
-          );
-        sentenceBoundaries = newSentenceBoundaries;
-
-        await this.bookPagesTable.updateById(nextPage.id, {
-          sentence_boundaries: JSON.stringify(newNextSentenceBoundaries),
-          updated_at: updatedAt,
-        });
-      }
-    }
-
     await this.bookPagesTable.updateById(bookPageId, {
       sentence_boundaries: JSON.stringify(sentenceBoundaries),
+      characters_info: JSON.stringify(characterList),
       color_code: colorCode,
       preprocessed: true,
       updated_at: updatedAt,
@@ -305,52 +292,40 @@ export class BookUploadService {
     });
 
     if (preProcessedPages === book.total_pages) {
+      await this.booksTable.updateById(bookPage.book_id, {
+        status: "postprocessing",
+        updated_at: updatedAt,
+      });
+
       await this.postProcessProducer.sendMessage(
         {
           book_id: bookPage.book_id,
         },
         { persistent: true },
       );
-    }
-  }
+    } else {
+      const nextPage = await this.bookPagesTable.getByBookIdAndPageNumber(
+        bookPage.book_id,
+        bookPage.page_number + 1,
+      );
 
-  async finishUpload(bookId: string): Promise<Book> {
-    const totalPages = await this.bookPagesTable.count({ book_id: bookId });
-    const updatedAt = new Date().toISOString();
-
-    const book = await this.booksTable.updateById(bookId, {
-      status: "preprocessing",
-      total_pages: totalPages,
-      updated_at: updatedAt,
-    });
-
-    if (!book) {
-      throw new Error(`Failed to finish book upload for ID: ${bookId}`);
-    }
-
-    const preProcessedPages = await this.bookPagesTable.count({
-      book_id: bookId,
-      preprocessed: true,
-    });
-
-    if (preProcessedPages === totalPages) {
-      await this.postProcessProducer.sendMessage(
+      if (!nextPage) {
+        throw new Error("Next book page not found");
+      }
+      await this.nlpPreProcessProducer.sendMessage(
         {
-          book_id: bookId,
+          book_page_id: nextPage.id,
+          content: nextPage.content,
+          prev_content: bookPage.content,
+          language: book.language,
+          accumulated_characters: characterList,
         },
         { persistent: true },
       );
     }
-
-    return book;
   }
 
   async postProcess(bookId: string) {
-    await this.booksTable.updateById(bookId, {
-      status: "postprocessing",
-      updated_at: new Date().toISOString(),
-    });
-
     await this.bookSearchCollection.deleteAllByBookId(bookId);
 
     const book = await this.booksTable.getById(bookId);
@@ -470,16 +445,26 @@ export class BookUploadService {
         chapter_number: chapter.chapter_number,
       };
 
-      await this.bookSearchCollection.insert(
-        insertMetadataInContent(book.language, sentences.join(" "), metadata),
-        metadata,
-      );
+      await this.bookSearchCollection.insert(sentences.join(" "), metadata);
 
       sentences = sentences.slice(-CHUNK_SENTENCE_OVERLAP);
     }
 
     await this.booksTable.updateById(bookId, {
       status: "draft",
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  async failBookPage(bookPageId: string) {
+    const bookPage = await this.bookPagesTable.getById(bookPageId);
+
+    if (!bookPage) {
+      throw new Error(`Book page not found for ID: ${bookPageId}`);
+    }
+
+    await this.booksTable.updateById(bookPage.book_id, {
+      status: "failed",
       updated_at: new Date().toISOString(),
     });
   }

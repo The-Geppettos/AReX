@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -10,40 +9,13 @@ import {
 
 import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import { BOOK_PAGE_HEIGHT, BOOK_PAGE_WIDTH } from "@src/bookreader/const";
+import type { FitContentInPageParams, FitContentInPageResponse } from "./type";
+import { PageSplitterContext } from "./context";
 
 const PREVIEW_WIDTH = 450;
 
-type FitContentInPageParams = {
-  chapterTitle: string | null;
-  content: string;
-  firstLineIndent: boolean;
-};
-
-type FitContentInPageResponse = {
-  visibleContentLength: number;
-};
-
-type FitContentInPageFunction = (
-  params: FitContentInPageParams,
-) => Promise<FitContentInPageResponse>;
-
 type PageSplitParams = FitContentInPageParams & {
   resolve: (value: FitContentInPageResponse) => void;
-};
-
-const PageSplitterContext = createContext({
-  fitContentInPage: (async () => ({
-    visibleContentLength: 0,
-  })) as FitContentInPageFunction,
-  dispose: () => {},
-  onLoad: (() => {}) as (previewIframe: HTMLIFrameElement) => void,
-  onUnload: () => {},
-});
-
-export const usePageSplitter = () => {
-  const { dispose, fitContentInPage } = useContext(PageSplitterContext);
-
-  return { dispose, fitContentInPage };
 };
 
 export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
@@ -65,7 +37,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
   const startPageSplit = (token: string) => {
     return new Promise<boolean>(async (resolveTaskGroup) => {
       while (pageSplitQueueRef.current.length > 0) {
-        const completed = await new Promise<boolean>(async (resolveTask) => {
+        const completed = await new Promise<boolean>((resolveTask) => {
           if (token !== currentTokenRef.current) {
             console.warn("Token has changed. Stopping page split.");
             resolveTask(false);
@@ -135,7 +107,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
     });
   };
 
-  const runQueue = async (force: boolean = false) => {
+  const runQueue = useCallback(async (force: boolean = false) => {
     if (!force && (currentTokenRef.current || !previewRef.current)) {
       return;
     }
@@ -158,7 +130,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
     }
 
     currentTokenRef.current = null;
-  };
+  }, []);
 
   const fitContentInPage = useCallback(
     async ({
@@ -166,7 +138,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
       chapterTitle,
       firstLineIndent,
     }: FitContentInPageParams) => {
-      const promise = new Promise<FitContentInPageResponse>(async (resolve) => {
+      const promise = new Promise<FitContentInPageResponse>((resolve) => {
         setOpenPreview(true);
         pageSplitQueueRef.current.push({
           chapterTitle,
@@ -179,7 +151,7 @@ export const PageSplitterProvider = ({ children }: PropsWithChildren) => {
 
       return await promise;
     },
-    [],
+    [runQueue],
   );
 
   return (
@@ -231,7 +203,7 @@ const PageSplitterDialog = () => {
       window.removeEventListener("message", handleMessage);
       onUnload();
     };
-  }, []);
+  }, [onLoad, onUnload]);
 
   return (
     <>

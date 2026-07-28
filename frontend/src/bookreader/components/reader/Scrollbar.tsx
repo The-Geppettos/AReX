@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 type PaginationScrollbarProps = {
   totalPages: number;
@@ -23,8 +23,10 @@ export const Scrollbar = ({
   // Convert page <-> px along the track
   const pageToPercent = (p: number): number =>
     totalPages <= 1 ? 0 : (p - 1) / (totalPages - 1);
-  const percentToPage = (t: number): number =>
-    1 + Math.round(t * (totalPages - 1));
+  const percentToPage = useCallback(
+    (t: number): number => 1 + Math.round(t * (totalPages - 1)),
+    [totalPages],
+  );
 
   const jumpToPageFromClientX = (clientX: number): void => {
     const track = trackRef.current;
@@ -67,7 +69,7 @@ export const Scrollbar = ({
     const rect = track.getBoundingClientRect();
     const t = rect.width === 0 ? 0 : hoverPx / rect.width;
     return clamp(percentToPage(t), 1, totalPages);
-  }, [hoverPx, totalPages, page]);
+  }, [hoverPx, totalPages, page, percentToPage]);
 
   return (
     <div className="scrollbar-wrapper">

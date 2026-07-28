@@ -1,20 +1,24 @@
-import { type ChatController } from "./context";
+import { type ChatController } from "./type";
 import { useEffect, useRef, useState } from "react";
 import { AgentAPI } from "@src/api/agent";
+import type { BookPageDetail } from "@shared/book";
 
 export const CharacterChatBot = ({
   bookId,
-  offset: initialOffset,
   pageNumber: initialPageNumber,
   chatController,
+  pageInfo,
 }: {
   bookId: string;
-  offset: number;
   pageNumber: number;
   chatController: ChatController;
+  pageInfo: BookPageDetail | null;
 }) => {
   const messageContainerRef = useRef<HTMLDivElement>({} as HTMLDivElement);
   const [waiting, setWaiting] = useState(false);
+  const [initCharacter, setInitCharacter] = useState<string>(
+    pageInfo?.characters?.[0] || "",
+  );
 
   const {
     messageInput,
@@ -22,12 +26,13 @@ export const CharacterChatBot = ({
     messages,
     appendMessage,
     chatId,
-    offset,
+    pageNumber,
     setChatId,
     setChatTitle,
-    setOffset,
     setPageNumber,
   } = chatController;
+
+  const [initialized, setInitialized] = useState(!!chatId);
 
   useEffect(() => {
     messageContainerRef.current.scrollTop =
@@ -37,6 +42,11 @@ export const CharacterChatBot = ({
   return (
     <>
       <div className="chat-message-container" ref={messageContainerRef}>
+        {messages.length === 0 && (
+          <div className="chat-placeholder">
+            등장인물을 선택 후 대화를 시작해보세요!
+          </div>
+        )}
         {messages.map((message, index) => (
           <div className={`chat-message ${message.role}`} key={index}>
             <div className={`chat-message-content ${message.role}`}>
@@ -57,36 +67,24 @@ export const CharacterChatBot = ({
           try {
             setWaiting(true);
             if (!chatId) {
-              setChatTitle("등장인물 찾는중...");
-              const characterCheck = await AgentAPI.checkCharacter({
+              setInitialized(true);
+              setChatTitle(`${initCharacter}와의 대화`);
+              const response = await AgentAPI.chatCharacter({
                 message: message,
                 book_id: bookId,
-                offset: initialOffset,
+                page_number: initialPageNumber,
+                character_name: initCharacter,
               });
-              if (characterCheck.has_character) {
-                setChatTitle(`${characterCheck.character_name}와의 대화`);
-                setChatId(characterCheck.chat_id);
-                setOffset(initialOffset);
-                setPageNumber(initialPageNumber);
-                appendMessage({
-                  content: characterCheck.message,
-                  role: "assistant",
-                });
-              } else {
-                setChatTitle("등장인물을 찾을 수 없음");
-                appendMessage({
-                  content:
-                    "입력하신 등장인물을 찾을 수 없습니다. 인물 이름을 정확히 입력했는지 확인해주세요.",
-                  role: "assistant",
-                });
-                return;
-              }
+              setChatId(response.chat_id);
+              setPageNumber(initialPageNumber);
+              appendMessage({ content: response.message, role: "assistant" });
             } else {
               const response = await AgentAPI.chatCharacter({
                 message: message,
                 book_id: bookId,
-                offset: offset,
+                page_number: pageNumber,
                 chat_id: chatId,
+                character_name: initCharacter,
               });
               appendMessage({ content: response.message, role: "assistant" });
             }
@@ -98,6 +96,22 @@ export const CharacterChatBot = ({
         }}
       >
         <fieldset className="chat-input" disabled={waiting}>
+          {!initialized && (
+            <select
+              className="mr-2"
+              onChange={(e) => {
+                setInitCharacter(e.target.value);
+              }}
+              value={initCharacter}
+            >
+              {(pageInfo?.characters || []).map((character_name) => (
+                <option key={character_name} value={character_name}>
+                  {character_name}
+                </option>
+              ))}
+            </select>
+          )}
+
           <input
             value={messageInput}
             onChange={(e) => {

@@ -1,15 +1,13 @@
-import type { ChatController } from "./context";
+import type { ChatController } from "./type";
 import { useEffect, useRef, useState } from "react";
 import { AgentAPI } from "@src/api/agent";
 
 export const AssistantChatBot = ({
   bookId,
-  offset: initialOffset,
   pageNumber: initialPageNumber,
   chatController,
 }: {
   bookId: string;
-  offset: number;
   pageNumber: number;
   chatController: ChatController;
 }) => {
@@ -22,10 +20,9 @@ export const AssistantChatBot = ({
     messages,
     appendMessage,
     chatId,
-    offset,
+    pageNumber,
     setChatId,
     setChatTitle,
-    setOffset,
     setPageNumber,
   } = chatController;
 
@@ -37,6 +34,12 @@ export const AssistantChatBot = ({
   return (
     <>
       <div className="chat-message-container" ref={messageContainerRef}>
+        {messages.length === 0 && (
+          <div className="chat-placeholder">
+            책에 대해 궁금한 점을 물어보세요! 현재 페이지까지의 내용을 바탕으로
+            답변해 드립니다.
+          </div>
+        )}
         {messages.map((message, index) => (
           <div className={`chat-message ${message.role}`} key={index}>
             <div className={`chat-message-content ${message.role}`}>
@@ -58,17 +61,16 @@ export const AssistantChatBot = ({
             const requestParams = {
               message: message,
               book_id: bookId,
-              offset: offset,
+              page_number: pageNumber,
               chat_id: chatId,
             };
             if (!chatId) {
-              requestParams.offset = initialOffset;
+              requestParams.page_number = initialPageNumber;
             }
             setWaiting(true);
             const resMessage = await AgentAPI.askAssistant(requestParams);
             setChatTitle("도우미와의 대화");
             setChatId(resMessage.chat_id);
-            setOffset(initialOffset);
             setPageNumber(initialPageNumber);
             appendMessage({
               content: resMessage.message,

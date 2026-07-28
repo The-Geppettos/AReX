@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import type { Server } from "http";
+import type { Controller } from "@src/controllers/abstract";
 
 export class HTTPServer {
   private express: Express;
@@ -27,6 +28,10 @@ export class HTTPServer {
 
   put(path: string, handler: express.RequestHandler) {
     this.express.put(path, handler);
+  }
+
+  delete(path: string, handler: express.RequestHandler) {
+    this.express.delete(path, handler);
   }
 
   initialize() {

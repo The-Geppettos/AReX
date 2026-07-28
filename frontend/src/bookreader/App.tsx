@@ -3,11 +3,15 @@ import "./App.scss";
 import { BookReader } from "./components/reader";
 import { BookPagePreview } from "./components/BookPagePreview";
 import { ModalProvider } from "./components/modal";
-import { ChatBotProvider } from "./components/chatbot/context";
+import { ChatBotProvider } from "./components/chatbot/provider";
 
 const BookReaderWrapper = () => {
   const { bookId } = useParams();
-  return <BookReader bookId={bookId || ""} />;
+  return (
+    <ChatBotProvider bookId={bookId || ""}>
+      <BookReader bookId={bookId || ""} />
+    </ChatBotProvider>
+  );
 };
 
 function App() {
@@ -21,11 +25,9 @@ function App() {
         <Route
           path={"/bookreader/read/:bookId"}
           element={
-            <ChatBotProvider>
-              <ModalProvider>
-                <BookReaderWrapper />
-              </ModalProvider>
-            </ChatBotProvider>
+            <ModalProvider>
+              <BookReaderWrapper />
+            </ModalProvider>
           }
         />
       </Routes>

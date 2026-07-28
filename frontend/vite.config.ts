@@ -13,13 +13,33 @@ dotenv.config({
   path: "../.env",
 });
 
-const frontendDevPort = process.env.FRONTEND_DEV_PORT
-  ? parseInt(process.env.FRONTEND_DEV_PORT, 10)
-  : 3000;
+const noAdmin = process.env.VITE_NO_ADMIN === "true";
 
-const coreServerHost = process.env.CORE_SERVER_HOST || "localhost";
-const coreServerPort = process.env.CORE_SERVER_PORT || "3001";
+const frontendPort = noAdmin
+  ? process.env.FRONTEND_NO_ADMIN_PORT
+    ? parseInt(process.env.FRONTEND_NO_ADMIN_PORT, 10)
+    : 3000
+  : process.env.FRONTEND_PORT
+    ? parseInt(process.env.FRONTEND_PORT, 10)
+    : 13000;
+
+const coreServerPort = noAdmin
+  ? process.env.CORE_SERVER_NO_ADMIN_PORT || "3001"
+  : process.env.CORE_SERVER_PORT || "13001";
+const coreServerHost = noAdmin
+  ? process.env.CORE_SERVER_NO_ADMIN_HOST || "localhost"
+  : process.env.CORE_SERVER_HOST || "localhost";
 const coreServerProtocol = process.env.CORE_SERVER_PROTOCOL || "http";
+
+const devScript = `
+    <script type="module">
+      import { injectIntoGlobalHook } from "/@react-refresh";
+      injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+    </script>
+    <script type="module" src="/@vite/client"></script>
+`;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -38,9 +58,10 @@ export default defineConfig({
           if (req.url?.startsWith("/bookreader/")) {
             const htmlPath = resolve(__dirname, "bookreader.html");
             const html = readFileSync(htmlPath, "utf-8");
+            const modifiedHtml = html.replace("<head>", `<head>${devScript}`);
             res.setHeader("Content-Type", "text/html");
             res.statusCode = 200;
-            res.end(html);
+            res.end(modifiedHtml);
             return;
           }
           next();
@@ -57,7 +78,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: frontendDevPort,
+    port: frontendPort,
     proxy: {
       "/api": {
         target: `${coreServerProtocol}://${coreServerHost}:${coreServerPort}`,

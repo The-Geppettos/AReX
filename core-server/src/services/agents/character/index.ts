@@ -1,35 +1,37 @@
+import { OpenAI } from "openai";
+import { ChatCompletionMessageParam } from "openai/resources";
+
 import type { BookSearchCollection } from "@src/component/vectordb/collections/bookSearch";
 import type { BooksTable } from "@src/component/coredb/tables/books";
 import type { ChatHistoryTable } from "@src/component/coredb/tables/chatHistory";
 
-import { OpenAI } from "openai";
-import {
-  getCharacterChatPrompts,
-  getCharacterSearchCheckPrompt,
-  getCharacterTraitSearchQuery,
-  getSearchQueryWritePrompts,
-  getUserCharacterExtractPrompt,
-  NO_CHARACTER_SPECIFIED,
-} from "./prompt";
-import { BotMessage, CharacterCheck, ChatMessage } from "@shared/chat";
-import { generateId, searchResultToString } from "@src/util";
+import { BotMessage, ChatHistory } from "@shared/chat";
+import { generateId } from "@src/util";
+import { BookPagesTable } from "@src/component/coredb/tables/bookPage";
+import { ToolManager } from "../tools";
+import { getSystemPrompt } from "./prompt";
 
-const OPENAI_CHAT_MODEL = "gpt-4o-mini";
+const OPENAI_CHAT_MODEL = "gpt-5.4";
+
+const MAX_STEPS = 10;
 
 export class CharacterAgentService {
   private bookSearchCollection;
   private booksTable;
   private chatHistoryTable;
+  private bookPagesTable;
   private openai;
 
   constructor(
     openaiApiKey: string,
     bookSearchCollection: BookSearchCollection,
     booksTable: BooksTable,
+    bookPagesTable: BookPagesTable,
     chatHistoryTable: ChatHistoryTable,
   ) {
     this.bookSearchCollection = bookSearchCollection;
     this.booksTable = booksTable;
+    this.bookPagesTable = bookPagesTable;
     this.chatHistoryTable = chatHistoryTable;
 
     this.openai = new OpenAI({
@@ -37,282 +39,182 @@ export class CharacterAgentService {
     });
   }
 
-  async checkCharacter(
-    query: string,
-    bookId: string,
-    offset: number,
-  ): Promise<CharacterCheck> {
-    const book = await this.booksTable.getById(bookId);
-    if (!book) {
-      throw new Error(`Book with ID ${bookId} not found`);
-    }
-
-    const userCharacterExtractPrompts = getUserCharacterExtractPrompt(
-      query,
-      book.language,
-    );
-
-    const userCharacterInput = await this.openai.chat.completions.create({
-      model: OPENAI_CHAT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: userCharacterExtractPrompts.systemPrompt,
-        },
-        ...userCharacterExtractPrompts.userQueries.map((q) => ({
-          role: "user" as const,
-          content: q,
-        })),
-      ],
-    });
-
-    const userCharacter = userCharacterInput.choices[0].message.content;
-    if (userCharacter === null) {
-      throw new Error("No character name returned from OpenAI API");
-    } else if (userCharacter === "") {
-      return { has_character: false };
-    }
-
-    const characterSearch = await this.bookSearchCollection.search(
-      [userCharacter],
-      bookId,
-      offset,
-      2,
-    );
-
-    const searchResultStr = searchResultToString(
-      characterSearch,
-      book.language,
-    )[0];
-
-    const characterSearchCheckPrompt = getCharacterSearchCheckPrompt(
-      book.language,
-      userCharacter,
-      searchResultStr,
-    );
-
-    const characterSearchCheck = await this.openai.chat.completions.create({
-      model: OPENAI_CHAT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: characterSearchCheckPrompt.systemPrompt,
-        },
-        ...characterSearchCheckPrompt.userQueries.map((q) => ({
-          role: "user" as const,
-          content: q,
-        })),
-      ],
-    });
-
-    const characterName = characterSearchCheck.choices[0].message.content;
-    if (characterName === null) {
-      throw new Error("No character search result returned from OpenAI API");
-    } else if (characterName === "") {
-      return { has_character: false };
-    }
-
-    if (characterName === NO_CHARACTER_SPECIFIED[book.language]) {
-      return {
-        has_character: false,
-      };
-    }
-
-    const characterTraitSearchQuery = getCharacterTraitSearchQuery(
-      book.language,
-      characterName,
-    );
-
-    const characterTraitSearchResult = await this.bookSearchCollection.search(
-      characterTraitSearchQuery,
-      bookId,
-      offset,
-      5,
-    );
-
-    const characterTraitSearch = searchResultToString(
-      characterTraitSearchResult,
-      book.language,
-    ).map((searchResult, idx) => ({
-      searchQuery: characterTraitSearchQuery[idx],
-      searchResult: searchResult,
-    }));
-
-    const characterChatPrompts = getCharacterChatPrompts(
-      book.language,
-      book.title,
-      characterName,
-      query,
-      {
-        characterTraitSearch,
-      },
-    );
-
-    const messages: ChatMessage[] = characterChatPrompts.userQueries.map(
-      (q) => ({
-        role: "user" as const,
-        content: q,
-      }),
-    );
-
-    messages.push(
-      ...characterChatPrompts.assistantQueries.map((q) => ({
-        role: "assistant" as const,
-        content: q,
-      })),
-    );
-
-    const response = await this.openai.chat.completions.create({
-      model: OPENAI_CHAT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: characterChatPrompts.systemPrompt,
-        },
-        ...messages,
-      ],
-    });
-
-    const responseMessage = response.choices[0].message.content;
-
-    if (responseMessage === null) {
-      throw new Error("No response message returned from OpenAI API");
-    }
-
-    messages.push({
-      role: "assistant",
-      content: responseMessage,
-    });
-
-    const chatHistory = await this.chatHistoryTable.insert({
-      id: generateId(),
-      book_id: bookId,
-      chat_title: characterName,
-      search_offset: offset,
-      chat_messages: JSON.stringify(messages),
-      chat_type: "character",
-      created_at: new Date().toISOString(),
-    });
-
-    if (!chatHistory) {
-      throw new Error("Failed to create chat history for character check");
-    }
-
-    return {
-      has_character: true,
-      character_name: characterName,
-      chat_id: chatHistory.id,
-      message: responseMessage,
-    };
-  }
-
   async conversate(
     query: string,
     bookId: string,
-    chatHistoryId: string,
+    pageNumber: number,
+    characterName: string,
+    chatHistoryId?: string,
   ): Promise<BotMessage> {
-    const book = await this.booksTable.getById(bookId);
+    let chatHistory: ChatHistory | null = null;
 
-    if (!book) {
-      throw new Error(`Book with ID ${bookId} not found`);
+    if (chatHistoryId) {
+      chatHistory = await this.chatHistoryTable.getById(chatHistoryId);
+
+      if (!chatHistory) {
+        throw new Error(`Chat history with ID ${chatHistoryId} not found`);
+      }
     }
 
-    const chatHistory = await this.chatHistoryTable.getById(chatHistoryId);
-    if (!chatHistory) {
-      throw new Error(`Chat history with ID ${chatHistoryId} not found`);
-    }
+    let messages: ChatCompletionMessageParam[] = [];
 
-    const searchQueryWritePrompts = getSearchQueryWritePrompts(
-      query,
-      book.language,
-      book.title,
-      chatHistory.chat_messages,
-    );
+    let lastPageReadInfo;
 
-    const searchQueryResult = await this.openai.chat.completions.create({
-      model: OPENAI_CHAT_MODEL,
-      messages: [
+    if (chatHistory) {
+      messages = JSON.parse(chatHistory.chat_messages);
+
+      lastPageReadInfo = await this.bookPagesTable.getByBookIdAndPageNumber(
+        chatHistory.book_id,
+        chatHistory.last_page_read,
+      );
+
+      if (!lastPageReadInfo) {
+        throw new Error(
+          `Book page not found for book ID ${chatHistory.book_id} and page number ${chatHistory.last_page_read}`,
+        );
+      }
+    } else {
+      const book = await this.booksTable.getById(bookId);
+
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+
+      lastPageReadInfo = await this.bookPagesTable.getByBookIdAndPageNumber(
+        bookId,
+        pageNumber,
+      );
+
+      if (!lastPageReadInfo) {
+        throw new Error(
+          `Book page not found for book ID ${bookId} and page number ${pageNumber}`,
+        );
+      }
+
+      const characterInfo: { name: string; description: string }[] = JSON.parse(
+        lastPageReadInfo.characters_info,
+      );
+      const character = characterInfo.find(
+        (c) => c.name.toLowerCase() === characterName?.toLowerCase(),
+      );
+
+      if (!character) {
+        throw new Error(
+          `Character with name ${characterName} not found on page ${pageNumber} of book ID ${bookId}`,
+        );
+      }
+
+      const systemPrompt = getSystemPrompt(
+        book,
+        character.name,
+        character.description,
+        lastPageReadInfo,
+      );
+
+      messages = [
         {
           role: "system",
-          content: searchQueryWritePrompts.systemPrompt,
+          content: systemPrompt,
         },
-        ...searchQueryWritePrompts.userQueries.map((q) => ({
-          role: "user" as const,
-          content: q,
-        })),
-      ],
-    });
-
-    const searchQuery = searchQueryResult.choices[0].message.content;
-
-    if (!searchQuery) {
-      throw new Error("No search query returned from OpenAI API");
-    }
-
-    const searchResult = await this.bookSearchCollection.search(
-      [searchQuery],
-      bookId,
-      chatHistory.search_offset,
-      7,
-    );
-
-    const searchResultStr = searchResultToString(
-      searchResult,
-      book.language,
-    )[0];
-
-    const messages = chatHistory.chat_messages
-      ? (JSON.parse(chatHistory.chat_messages) as ChatMessage[])
-      : [];
-
-    const characterChatPrompt = getCharacterChatPrompts(
-      book.language,
-      book.title,
-      chatHistory.chat_title,
-      query,
-      { search: { searchQuery, searchResult: searchResultStr } },
-    );
-
-    messages.push(
-      ...characterChatPrompt.userQueries.map((q) => ({
-        role: "user" as const,
-        content: q,
-      })),
-    );
-
-    messages.push(
-      ...characterChatPrompt.assistantQueries.map((q) => ({
-        role: "assistant" as const,
-        content: q,
-      })),
-    );
-
-    const result = await this.openai.chat.completions.create({
-      model: OPENAI_CHAT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: characterChatPrompt.systemPrompt,
-        },
-        ...messages,
-      ],
-    });
-
-    const message = result.choices[0].message.content;
-
-    if (!message) {
-      throw new Error("No message returned from OpenAI API");
+      ];
     }
 
     messages.push({
-      role: "assistant",
-      content: message,
+      role: "user",
+      content: `Query: ${query}`,
     });
 
-    this.chatHistoryTable.updateById(chatHistoryId, {
-      chat_messages: JSON.stringify(messages),
-    });
+    const toolManager = ToolManager.create(
+      lastPageReadInfo.book_id,
+      this.bookPagesTable,
+      this.bookSearchCollection,
+      lastPageReadInfo.page_number,
+    );
 
-    return { message, chat_id: chatHistoryId };
+    let responseMessage: string | null = null;
+
+    for (let step = 0; step < MAX_STEPS; step++) {
+      const response = await this.openai.chat.completions.create({
+        model: OPENAI_CHAT_MODEL,
+        tools: toolManager.toolDefinitions,
+        messages: messages,
+      });
+
+      const choice = response.choices[0];
+
+      if (choice.finish_reason === "tool_calls") {
+        const tool_calls = choice.message?.tool_calls || [];
+
+        messages.push({
+          role: "assistant",
+          content: choice.message.content,
+          tool_calls: choice.message.tool_calls,
+        });
+
+        for (const tool_call of tool_calls) {
+          if (tool_call.type === "function") {
+            const toolResponse = await toolManager.callTool(
+              tool_call.function.name,
+              tool_call.function.arguments,
+            );
+            messages.push({
+              role: "tool",
+              content: toolResponse,
+              tool_call_id: tool_call.id,
+            });
+          }
+        }
+      } else if (choice.finish_reason === "stop") {
+        messages.push({
+          role: "assistant",
+          content: choice.message?.content || "",
+        });
+        responseMessage = choice.message?.content || "";
+        break;
+      } else {
+        throw new Error(`Unexpected finish reason: ${choice.finish_reason}`);
+      }
+    }
+
+    if (!responseMessage) {
+      messages.push({
+        role: "assistant",
+        content:
+          "I have reached the maximum number of steps and now I will provide my final response based on the information I have gathered.",
+      });
+      const response = await this.openai.chat.completions.create({
+        model: OPENAI_CHAT_MODEL,
+        messages: messages,
+      });
+
+      const choice = response.choices[0];
+      responseMessage = choice.message?.content || "";
+    }
+
+    if (!chatHistory) {
+      const newChatHistory: ChatHistory = {
+        id: generateId(),
+        book_id: bookId,
+        last_page_read: pageNumber,
+        chat_title: `Chat with ${characterName}`,
+        chat_messages: JSON.stringify(messages),
+        chat_type: "character",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      chatHistory = await this.chatHistoryTable.insert(newChatHistory);
+
+      if (!chatHistory) {
+        throw new Error("Failed to create new chat history");
+      }
+    } else {
+      this.chatHistoryTable.updateById(chatHistory.id, {
+        chat_messages: JSON.stringify(messages),
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    return { message: responseMessage, chat_id: chatHistory.id };
   }
 }

@@ -1,0 +1,137 @@
+services:
+  frontend:
+    image: node:lts-jod
+    container_name: frontend
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/frontend/node_modules
+      - /app/frontend/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    depends_on:
+      - core-server
+
+  frontend-no-admin:
+    image: node:lts-jod
+    container_name: frontend-no-admin
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/frontend/node_modules
+      - /app/frontend/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${FRONTEND_NO_ADMIN_PORT}:${FRONTEND_NO_ADMIN_PORT}"
+    environment:
+      VITE_NO_ADMIN: "true"
+    depends_on:
+      - core-server
+
+  core-server:
+    image: node:lts-jod
+    container_name: core-server
+    hostname: "${CORE_SERVER_HOST}"
+    working_dir: /app/core-server
+    volumes:
+      - ./core-server:/app/core-server
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/core-server/node_modules
+      - /app/core-server/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${CORE_SERVER_PORT}:${CORE_SERVER_PORT}"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - chromadb
+
+  core-server-no-admin:
+    image: node:lts-jod
+    container_name: core-server-no-admin
+    hostname: "${CORE_SERVER_NO_ADMIN_HOST}"
+    working_dir: /app/core-server
+    volumes:
+      - ./core-server:/app/core-server
+      - ./shared:/app/shared
+      - ./.env:/app/.env
+      - /app/core-server/node_modules
+      - /app/core-server/dist
+    command: sh -c "npm install && npm run build && exec node start.js"
+    ports:
+      - "${CORE_SERVER_NO_ADMIN_PORT}:${CORE_SERVER_NO_ADMIN_PORT}"
+    environment:
+      NO_ADMIN: "true"
+    depends_on:
+      - postgres
+      - rabbitmq
+      - chromadb
+
+  nlp:
+    image: python:3.12
+    container_name: nlp
+    working_dir: /app/nlp
+    volumes:
+      - ./nlp:/app/nlp
+      - ./.env:/app/.env
+      - /app/nlp/.venv
+      - /app/nlp/nltk_data
+    command: sh -c "python -u -m prepare && exec python -m src.main"
+    depends_on:
+      - rabbitmq
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    hostname: "${POSTGRES_HOST}"
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_CORE_DB}"
+      PGPORT: "${POSTGRES_PORT}"
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: "${RABBITMQ_HOST}"
+    ports:
+      - "${RABBITMQ_PORT}:${RABBITMQ_PORT}"
+      - "15672:15672" # management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_NODE_PORT: "${RABBITMQ_PORT}"
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+
+  chromadb:
+    image: chromadb/chroma:1.0.16.dev77
+    container_name: chromadb
+    hostname: "${CHROMA_DB_HOST}"
+    ports:
+      - "${CHROMA_DB_PORT}:${CHROMA_DB_PORT}"
+    expose:
+      - "${CHROMA_DB_PORT}"
+    working_dir: /app/chromadb
+    command:
+      [
+        "run",
+        "--path",
+        "./chroma_data",
+        "--port",
+        "${CHROMA_DB_PORT}",
+        "--host",
+        "chromadb",
+      ]
+    volumes:
+      - ./chroma_data:/app/chromadb/chroma_data
