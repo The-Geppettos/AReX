@@ -1,17 +1,15 @@
-import { type ChatController } from "./context";
+import { type ChatController } from "./type";
 import { useEffect, useRef, useState } from "react";
 import { AgentAPI } from "@src/api/agent";
 import type { BookPageDetail } from "@shared/book";
 
 export const CharacterChatBot = ({
   bookId,
-  offset: initialOffset,
   pageNumber: initialPageNumber,
   chatController,
   pageInfo,
 }: {
   bookId: string;
-  offset: number;
   pageNumber: number;
   chatController: ChatController;
   pageInfo: BookPageDetail | null;
@@ -28,11 +26,9 @@ export const CharacterChatBot = ({
     messages,
     appendMessage,
     chatId,
-    offset,
     pageNumber,
     setChatId,
     setChatTitle,
-    setOffset,
     setPageNumber,
   } = chatController;
 
@@ -76,21 +72,19 @@ export const CharacterChatBot = ({
               const response = await AgentAPI.chatCharacter({
                 message: message,
                 book_id: bookId,
-                offset: initialOffset,
                 page_number: initialPageNumber,
                 character_name: initCharacter,
               });
               setChatId(response.chat_id);
-              setOffset(initialOffset);
               setPageNumber(initialPageNumber);
               appendMessage({ content: response.message, role: "assistant" });
             } else {
               const response = await AgentAPI.chatCharacter({
                 message: message,
                 book_id: bookId,
-                offset: offset,
                 page_number: pageNumber,
                 chat_id: chatId,
+                character_name: initCharacter,
               });
               appendMessage({ content: response.message, role: "assistant" });
             }

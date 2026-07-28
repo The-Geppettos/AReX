@@ -7,7 +7,6 @@ type ControlOverlayProps = {
   showPrevPageControl: boolean;
   showNextPageControl: boolean;
   bookId: string;
-  offset: number;
   pageNumber: number;
   totalPages: number;
   pageInfo: BookPageDetail | null;
@@ -19,7 +18,6 @@ export const ControlOverlay = ({
   showPrevPageControl,
   showNextPageControl,
   bookId,
-  offset,
   pageNumber,
   totalPages,
   pageInfo,
@@ -50,7 +48,6 @@ export const ControlOverlay = ({
         <div className="breath-modal-content">
           <ChatBot
             bookId={bookId}
-            offset={offset}
             pageNumber={pageNumber}
             totalPages={totalPages}
             pageInfo={pageInfo}
