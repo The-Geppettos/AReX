@@ -13,7 +13,7 @@ export class ReadPageTool extends Tool {
     description:
       "Fetch the raw content of a specific page in the novel. Use this when you know " +
       "the page number you should look for, or when you want to read the surrounding context " +
-      "(what comes before/after) around a result found via vector_search.",
+      "(what comes before/after) around a result found via `vector_search.`",
     parameters: {
       type: "object",
       properties: {

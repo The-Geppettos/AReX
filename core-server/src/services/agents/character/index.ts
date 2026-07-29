@@ -3,11 +3,13 @@ import { ChatCompletionMessageParam } from "openai/resources";
 
 import type { BookSearchCollection } from "@src/component/vectordb/collections/bookSearch";
 import type { BooksTable } from "@src/component/coredb/tables/books";
+import type { BookChaptersTable } from "@src/component/coredb/tables/bookChapter";
+import type { BookPagesTable } from "@src/component/coredb/tables/bookPage";
 import type { ChatHistoryTable } from "@src/component/coredb/tables/chatHistory";
 
-import { BotMessage, ChatHistory } from "@shared/chat";
+import type { BotMessage, ChatHistory } from "@shared/chat";
+
 import { generateId } from "@src/util";
-import { BookPagesTable } from "@src/component/coredb/tables/bookPage";
 import { ToolManager } from "../tools";
 import { getSystemPrompt } from "./prompt";
 
@@ -18,19 +20,22 @@ const MAX_STEPS = 10;
 export class CharacterAgentService {
   private bookSearchCollection;
   private booksTable;
-  private chatHistoryTable;
+  private bookChaptersTable;
   private bookPagesTable;
+  private chatHistoryTable;
   private openai;
 
   constructor(
     openaiApiKey: string,
     bookSearchCollection: BookSearchCollection,
     booksTable: BooksTable,
+    bookChaptersTable: BookChaptersTable,
     bookPagesTable: BookPagesTable,
     chatHistoryTable: ChatHistoryTable,
   ) {
     this.bookSearchCollection = bookSearchCollection;
     this.booksTable = booksTable;
+    this.bookChaptersTable = bookChaptersTable;
     this.bookPagesTable = bookPagesTable;
     this.chatHistoryTable = chatHistoryTable;
 
@@ -80,6 +85,8 @@ export class CharacterAgentService {
         throw new Error(`Book with ID ${bookId} not found`);
       }
 
+      const chapters = await this.bookChaptersTable.getChaptersByBookId(bookId);
+
       lastPageReadInfo = await this.bookPagesTable.getByBookIdAndPageNumber(
         bookId,
         pageNumber,
@@ -106,6 +113,7 @@ export class CharacterAgentService {
 
       const systemPrompt = getSystemPrompt(
         book,
+        chapters,
         character.name,
         character.description,
         lastPageReadInfo,

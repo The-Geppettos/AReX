@@ -54,6 +54,8 @@ export interface BookChapter {
   chapter_number: number;
   title: string;
   created_at: string;
+  start_page_number: number;
+  end_page_number: number;
 }
 
 export interface BookChapterUpload extends Pick<

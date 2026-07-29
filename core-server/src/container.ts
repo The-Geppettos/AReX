@@ -145,6 +145,7 @@ const assistantAgentService = new AssistantAgentService(
   openaiApiKey,
   bookSearchCollection,
   booksTable,
+  bookChaptersTable,
   bookPagesTable,
   chatHistoryTable,
 );
@@ -152,6 +153,7 @@ const characterAgentService = new CharacterAgentService(
   openaiApiKey,
   bookSearchCollection,
   booksTable,
+  bookChaptersTable,
   bookPagesTable,
   chatHistoryTable,
 );

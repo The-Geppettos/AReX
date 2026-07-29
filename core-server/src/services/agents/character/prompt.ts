@@ -1,7 +1,8 @@
-import type { Book, BookPageSchema } from "@shared/book";
+import type { Book, BookChapter, BookPageSchema } from "@shared/book";
 
 export const getSystemPrompt = (
   bookInfo: Book,
+  chapters: BookChapter[],
   characterName: string,
   characterDescription: string,
   lastPageReadInfo: BookPageSchema,
@@ -17,6 +18,14 @@ Title: ${bookInfo.title}
 Author: ${bookInfo.author}
 Language: ${bookInfo.language}
 Last page read by user: ${lastPageReadInfo.page_number}
+
+[Chapter information]
+${chapters
+  .map(
+    (chapter) =>
+      `Chapter ${chapter.chapter_number}: ${chapter.title} (Pages ${chapter.start_page_number}-${chapter.end_page_number})`,
+  )
+  .join("\n")}
 
 [Tool-use policy]
 1. If a specific fact from the novel (an event, a line of dialogue, a relationship, etc.)

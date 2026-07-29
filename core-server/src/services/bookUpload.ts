@@ -82,6 +82,8 @@ export class BookUploadService {
       chapter_number: chapterNumber,
       title,
       created_at: createdAt,
+      start_page_number: 0,
+      end_page_number: 0,
     });
 
     if (chapter === null) {
@@ -145,9 +147,21 @@ export class BookUploadService {
       throw new Error("Failed to create book page");
     }
 
-    const book = await this.booksTable.getById(bookId);
-    if (!book) {
-      throw new Error("Book not found");
+    const chapter = await this.bookChaptersTable.getById(chapterId);
+
+    if (!chapter) {
+      throw new Error("Chapter not found");
+    }
+
+    if (chapter.start_page_number === 0) {
+      await this.bookChaptersTable.updateById(chapterId, {
+        start_page_number: pageNumber,
+        end_page_number: pageNumber,
+      });
+    } else {
+      await this.bookChaptersTable.updateById(chapterId, {
+        end_page_number: pageNumber,
+      });
     }
 
     return { ...result, sentence_boundaries: [], characters: [] };

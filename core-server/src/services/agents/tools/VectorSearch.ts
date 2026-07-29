@@ -17,8 +17,9 @@ export class VectorSearchTool extends Tool {
       "Use this when the exact page location is unknown, or when you need information " +
       "about a particular event, line of dialogue, or relationship. Each result includes " +
       "the matching text chunk and the page number where it appears. " +
+      "You can use `page_from` and `page_to` to limit the search to a specific range of pages. " +
       "This only returns segment matches, not the full page content. If you need to read the full page, " +
-      "use read_page to read the page content with the page number returned by this tool.",
+      "use `read_page` tool to read the page content with the page number returned by this tool.",
     parameters: {
       type: "object",
       properties: {
@@ -26,16 +27,16 @@ export class VectorSearchTool extends Tool {
           type: "string",
           description: "The natural-language search query",
         },
-        topK: {
+        top_k: {
           type: "number",
           description: "Number of results to return (default 5)",
         },
-        pageFrom: {
+        page_from: {
           type: "number",
           description:
             "The starting page number to search from (inclusive). Default is 1.",
         },
-        pageTo: {
+        page_to: {
           type: "number",
           description:
             "The ending page number to search to (inclusive). Default is the last page number that has been read.",

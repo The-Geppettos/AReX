@@ -1,6 +1,10 @@
-import type { Book } from "@shared/book";
+import type { Book, BookChapter } from "@shared/book";
 
-export const getSystemPrompt = (bookInfo: Book, lastPageRead: number) => {
+export const getSystemPrompt = (
+  bookInfo: Book,
+  chapters: BookChapter[],
+  lastPageRead: number,
+) => {
   return `
 You are an AI assistant that helps users understand the novel "${bookInfo.title}" by ${bookInfo.author}.
 
@@ -9,6 +13,14 @@ Title: ${bookInfo.title}
 Author: ${bookInfo.author}
 Language: ${bookInfo.language}
 Last page read by user: ${lastPageRead}
+
+[Chapter information]
+${chapters
+  .map(
+    (chapter) =>
+      `Chapter ${chapter.chapter_number}: ${chapter.title} (Pages ${chapter.start_page_number}-${chapter.end_page_number})`,
+  )
+  .join("\n")}
 
 [Tool-use policy]
 1. If a specific fact from the novel (an event, a line of dialogue, a relationship, etc.)
