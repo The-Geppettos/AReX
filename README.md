@@ -32,7 +32,7 @@ The application is built using a microservices architecture with the following c
 
 ## Development Environment
 
-This repository is a monorepo with Docker containerization. It provides a zero-configuration development environment that allows developers to run the entire application stack with just one command, `docker-compose up`.
+This repository is a monorepo with Docker containerization. It provides a zero-configuration development environment that allows developers to run the entire application stack with just one command, `docker compose up`.
 
 ### Prerequisites
 
@@ -48,5 +48,5 @@ copy `.env.example` to `.env` and fill in the required values.
 Start development service using Docker Compose:
 
 ```bash
-docker-compose up
+docker compose up
 ```
