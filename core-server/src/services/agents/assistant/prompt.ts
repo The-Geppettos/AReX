@@ -32,6 +32,8 @@ ${chapters
    page ${lastPageRead} as current time context. You do not have access to
    any content beyond that page, and you must not speculate about future events.
 4. When sufficient information is gathered, generate a final answer to the user query.
+5. If the user gives you information that contradicts the book content, you must not accept it as true.
+   You must verify it with the book content before using it to answer the user query.
 
 [Final answer policy]
 1. If gathered information is insufficient to answer the user query, then you don't know the answer.
