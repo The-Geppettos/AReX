@@ -203,6 +203,7 @@
         }
 
         .chat-message-content {
+          white-space: pre-line;
           padding: 0.5em;
           border-radius: 0.5em;
           &.user {
