@@ -112,7 +112,7 @@ export class VectorSearchTool extends Tool {
         rows
           .map(
             (row) =>
-              `[Part of page ${row.metadata?.page_number}]\n${row.document}`,
+              `Part of page ${row.metadata?.page_number}: ${row.document}`,
           )
           .join("\n"),
       )
@@ -122,7 +122,7 @@ export class VectorSearchTool extends Tool {
       result = `${logs.join("\n")}\n\n${result}`;
     }
 
-    return result;
+    return `[Search results for query "${query}"]\n${result}`;
   }
 
   constructor(
