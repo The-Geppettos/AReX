@@ -15,6 +15,7 @@ const main = async () => {
 
     await container.httpServer.close();
     if (container.messageBroker) await container.messageBroker.close();
+    await container.langGraphCheckpointer.end();
     await container.coreDb.close();
     await container.vectorDb.close();
 
@@ -32,6 +33,7 @@ const main = async () => {
   console.info("Initializing components...");
 
   await container.coreDb.initialize();
+  await container.langGraphCheckpointer.setup();
   await container.vectorDb.initialize();
   if (container.messageBroker) await container.messageBroker.initialize();
   await container.httpServer.initialize();

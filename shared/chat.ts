@@ -11,12 +11,10 @@ export type BotMessage = {
   message: string;
 };
 
-export type ChatHistory = {
+export type ChatState = {
   id: string;
   book_id: string;
   last_page_read: number;
-  chat_title: string;
-  chat_messages: string;
   chat_type: (typeof CHAT_TYPES)[number];
   created_at: string;
   updated_at: string;

@@ -1,29 +1,34 @@
-import { OpenAI } from "openai";
-import { ChatCompletionMessageParam } from "openai/resources";
+import {
+  BaseMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
+import { ChatOpenAI } from "@langchain/openai";
+import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
 
 import type { BookSearchCollection } from "@src/component/vectordb/collections/bookSearch";
 import type { BooksTable } from "@src/component/coredb/tables/books";
 import type { BookChaptersTable } from "@src/component/coredb/tables/bookChapter";
 import type { BookPagesTable } from "@src/component/coredb/tables/bookPage";
-import type { ChatHistoryTable } from "@src/component/coredb/tables/chatHistory";
+import type { ChatStateTable } from "@src/component/coredb/tables/chatState";
 
-import type { BotMessage, ChatHistory } from "@shared/chat";
-
+import type { BotMessage, ChatState } from "@shared/chat";
 import { generateId } from "@src/util";
-import { ToolManager } from "../tools";
+import { createAgentTools } from "../tools";
+import { createReactStyleAgentGraph } from "../reactAgentGraph";
 import { getSystemPrompt } from "./prompt";
 
 const OPENAI_CHAT_MODEL = "gpt-5.4";
-
 const MAX_STEPS = 10;
 
 export class CharacterAgentService {
-  private bookSearchCollection;
-  private booksTable;
-  private bookChaptersTable;
-  private bookPagesTable;
-  private chatHistoryTable;
-  private openai;
+  private bookSearchCollection: BookSearchCollection;
+  private booksTable: BooksTable;
+  private bookChaptersTable: BookChaptersTable;
+  private bookPagesTable: BookPagesTable;
+  private chatStateTable: ChatStateTable;
+  private conversationCheckpointer: BaseCheckpointSaver;
+  private openaiApiKey: string;
 
   constructor(
     openaiApiKey: string,
@@ -31,17 +36,16 @@ export class CharacterAgentService {
     booksTable: BooksTable,
     bookChaptersTable: BookChaptersTable,
     bookPagesTable: BookPagesTable,
-    chatHistoryTable: ChatHistoryTable,
+    chatStateTable: ChatStateTable,
+    conversationCheckpointer: BaseCheckpointSaver,
   ) {
     this.bookSearchCollection = bookSearchCollection;
     this.booksTable = booksTable;
     this.bookChaptersTable = bookChaptersTable;
     this.bookPagesTable = bookPagesTable;
-    this.chatHistoryTable = chatHistoryTable;
-
-    this.openai = new OpenAI({
-      apiKey: openaiApiKey,
-    });
+    this.chatStateTable = chatStateTable;
+    this.conversationCheckpointer = conversationCheckpointer;
+    this.openaiApiKey = openaiApiKey;
   }
 
   async conversate(
@@ -49,35 +53,23 @@ export class CharacterAgentService {
     bookId: string,
     pageNumber: number,
     characterName: string,
-    chatHistoryId?: string,
+    chatId?: string,
   ): Promise<BotMessage> {
-    let chatHistory: ChatHistory | null = null;
+    const threadId = chatId || generateId();
+    const userMessage = new HumanMessage(`Query: ${query}`);
 
-    if (chatHistoryId) {
-      chatHistory = await this.chatHistoryTable.getById(chatHistoryId);
+    let messages: BaseMessage[];
+    let chatState: ChatState;
 
-      if (!chatHistory) {
-        throw new Error(`Chat history with ID ${chatHistoryId} not found`);
+    if (chatId) {
+      const retrievedChatState = await this.chatStateTable.getById(chatId);
+
+      if (!retrievedChatState) {
+        throw new Error(`Chat state with ID ${chatId} not found`);
       }
-    }
 
-    let messages: ChatCompletionMessageParam[] = [];
-
-    let lastPageReadInfo;
-
-    if (chatHistory) {
-      messages = JSON.parse(chatHistory.chat_messages);
-
-      lastPageReadInfo = await this.bookPagesTable.getByBookIdAndPageNumber(
-        chatHistory.book_id,
-        chatHistory.last_page_read,
-      );
-
-      if (!lastPageReadInfo) {
-        throw new Error(
-          `Book page not found for book ID ${chatHistory.book_id} and page number ${chatHistory.last_page_read}`,
-        );
-      }
+      chatState = retrievedChatState;
+      messages = [userMessage];
     } else {
       const book = await this.booksTable.getById(bookId);
 
@@ -87,10 +79,8 @@ export class CharacterAgentService {
 
       const chapters = await this.bookChaptersTable.getChaptersByBookId(bookId);
 
-      lastPageReadInfo = await this.bookPagesTable.getByBookIdAndPageNumber(
-        bookId,
-        pageNumber,
-      );
+      const lastPageReadInfo =
+        await this.bookPagesTable.getByBookIdAndPageNumber(bookId, pageNumber);
 
       if (!lastPageReadInfo) {
         throw new Error(
@@ -102,7 +92,7 @@ export class CharacterAgentService {
         lastPageReadInfo.characters_info,
       );
       const character = characterInfo.find(
-        (c) => c.name.toLowerCase() === characterName?.toLowerCase(),
+        (c) => c.name.toLowerCase() === characterName.toLowerCase(),
       );
 
       if (!character) {
@@ -119,110 +109,61 @@ export class CharacterAgentService {
         lastPageReadInfo,
       );
 
-      messages = [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-      ];
-    }
-
-    messages.push({
-      role: "user",
-      content: `Query: ${query}`,
-    });
-
-    const toolManager = ToolManager.create(
-      lastPageReadInfo.book_id,
-      this.bookPagesTable,
-      this.bookSearchCollection,
-      lastPageReadInfo.page_number,
-    );
-
-    let responseMessage: string | null = null;
-
-    for (let step = 0; step < MAX_STEPS; step++) {
-      const response = await this.openai.chat.completions.create({
-        model: OPENAI_CHAT_MODEL,
-        tools: toolManager.toolDefinitions,
-        messages: messages,
-      });
-
-      const choice = response.choices[0];
-
-      if (choice.finish_reason === "tool_calls") {
-        const tool_calls = choice.message?.tool_calls || [];
-
-        messages.push({
-          role: "assistant",
-          content: choice.message.content,
-          tool_calls: choice.message.tool_calls,
-        });
-
-        for (const tool_call of tool_calls) {
-          if (tool_call.type === "function") {
-            const toolResponse = await toolManager.callTool(
-              tool_call.function.name,
-              tool_call.function.arguments,
-            );
-            messages.push({
-              role: "tool",
-              content: toolResponse,
-              tool_call_id: tool_call.id,
-            });
-          }
-        }
-      } else if (choice.finish_reason === "stop") {
-        messages.push({
-          role: "assistant",
-          content: choice.message?.content || "",
-        });
-        responseMessage = choice.message?.content || "";
-        break;
-      } else {
-        throw new Error(`Unexpected finish reason: ${choice.finish_reason}`);
-      }
-    }
-
-    if (!responseMessage) {
-      messages.push({
-        role: "assistant",
-        content:
-          "I have reached the maximum number of steps and now I will provide my final response based on the information I have gathered.",
-      });
-      const response = await this.openai.chat.completions.create({
-        model: OPENAI_CHAT_MODEL,
-        messages: messages,
-      });
-
-      const choice = response.choices[0];
-      responseMessage = choice.message?.content || "";
-    }
-
-    if (!chatHistory) {
-      const newChatHistory: ChatHistory = {
-        id: generateId(),
+      const createdChatState = await this.chatStateTable.insert({
+        id: threadId,
         book_id: bookId,
         last_page_read: pageNumber,
-        chat_title: `Chat with ${characterName}`,
-        chat_messages: JSON.stringify(messages),
         chat_type: "character",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      };
-
-      chatHistory = await this.chatHistoryTable.insert(newChatHistory);
-
-      if (!chatHistory) {
-        throw new Error("Failed to create new chat history");
-      }
-    } else {
-      this.chatHistoryTable.updateById(chatHistory.id, {
-        chat_messages: JSON.stringify(messages),
-        updated_at: new Date().toISOString(),
       });
+
+      if (!createdChatState) {
+        throw new Error("Failed to create new chat state");
+      }
+
+      chatState = createdChatState;
+      messages = [new SystemMessage(systemPrompt), userMessage];
     }
 
-    return { message: responseMessage, chat_id: chatHistory.id };
+    const tools = createAgentTools(
+      chatState.book_id,
+      this.bookPagesTable,
+      this.bookSearchCollection,
+      chatState.last_page_read,
+    );
+
+    const model = new ChatOpenAI({
+      modelName: OPENAI_CHAT_MODEL,
+      openAIApiKey: this.openaiApiKey,
+    });
+
+    const agent = createReactStyleAgentGraph(
+      model,
+      tools,
+      this.conversationCheckpointer,
+    );
+
+    const agentResult = await agent.invoke(
+      { messages },
+      {
+        recursionLimit: MAX_STEPS * 2,
+        configurable: { thread_id: threadId },
+      },
+    );
+
+    const finalMessages: BaseMessage[] = agentResult.messages;
+    const lastMessage = finalMessages[finalMessages.length - 1];
+
+    if (!lastMessage) {
+      throw new Error("Agent returned no messages");
+    }
+
+    const responseMessage =
+      typeof lastMessage.content === "string"
+        ? lastMessage.content
+        : JSON.stringify(lastMessage.content);
+
+    return { message: responseMessage, chat_id: threadId };
   }
 }

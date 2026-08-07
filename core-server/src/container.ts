@@ -32,8 +32,9 @@ import {
   PostProcessConsumer,
   PostProcessProducer,
 } from "@src/component/messagebroker/queues/postProcess";
-import { ChatHistoryTable } from "./component/coredb/tables/chatHistory";
+import { ChatStateTable } from "./component/coredb/tables/chatState";
 import { BookManageController } from "./controllers/bookManage";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
 dotenv.config({
   path: "../.env",
@@ -64,6 +65,14 @@ const openaiApiKey = process.env.OPENAI_API_KEY || "";
 const rbmq_host = process.env.RABBITMQ_HOST || "localhost";
 const rbmq_port = process.env.RABBITMQ_PORT || "5672";
 
+function buildPostgresConnectionString(): string {
+  const auth = postgres_password
+    ? `${encodeURIComponent(postgres_user)}:${encodeURIComponent(postgres_password)}@`
+    : `${encodeURIComponent(postgres_user)}@`;
+
+  return `postgresql://${auth}${postgres_host}:${postgres_port}/${postgres_core_db}`;
+}
+
 /*
  * --- Initialization ---
  * This section initializes the main components of the application.
@@ -87,7 +96,12 @@ const bookPagesTable = new BookPagesTable(
   booksTable,
   bookChaptersTable,
 );
-const chatHistoryTable = new ChatHistoryTable(coreDb, booksTable);
+const chatStateTable = new ChatStateTable(coreDb, booksTable);
+
+const langGraphCheckpointer = PostgresSaver.fromConnString(
+  buildPostgresConnectionString(),
+  { schema: "langgraph" },
+);
 
 export const vectorDb = new VectorDB(
   chromadb_host,
@@ -147,7 +161,8 @@ const assistantAgentService = new AssistantAgentService(
   booksTable,
   bookChaptersTable,
   bookPagesTable,
-  chatHistoryTable,
+  chatStateTable,
+  langGraphCheckpointer,
 );
 const characterAgentService = new CharacterAgentService(
   openaiApiKey,
@@ -155,7 +170,8 @@ const characterAgentService = new CharacterAgentService(
   booksTable,
   bookChaptersTable,
   bookPagesTable,
-  chatHistoryTable,
+  chatStateTable,
+  langGraphCheckpointer,
 );
 
 const bookController = new BookController(httpServer, bookService);
@@ -175,4 +191,5 @@ export default {
   coreDb,
   vectorDb,
   messageBroker,
+  langGraphCheckpointer,
 };

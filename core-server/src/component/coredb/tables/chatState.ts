@@ -1,19 +1,17 @@
-import { CHAT_TYPES, type ChatHistory } from "@shared/chat";
+import { CHAT_TYPES, type ChatState } from "@shared/chat";
 import type { CoreDB } from "..";
 import type { BooksTable } from "./books";
 
 import { Table } from "./abstract";
 
-export class ChatHistoryTable extends Table<ChatHistory> {
-  tableName = "chat_history";
+export class ChatStateTable extends Table<ChatState> {
+  tableName = "chat_state";
   idField = "id" as const;
 
   protected schema = {
     id: "TEXT PRIMARY KEY",
     book_id: "TEXT NOT NULL",
     last_page_read: "INTEGER NOT NULL",
-    chat_title: "TEXT NOT NULL",
-    chat_messages: "TEXT NOT NULL",
     chat_type: "TEXT NOT NULL",
     created_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",
     updated_at: "TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP",

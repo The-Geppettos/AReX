@@ -58,24 +58,32 @@ export const AssistantChatBot = ({
           setMessageInput("");
           appendMessage({ content: message, role: "user" });
           try {
-            const requestParams = {
-              message: message,
-              book_id: bookId,
-              page_number: pageNumber,
-              chat_id: chatId,
-            };
-            if (!chatId) {
-              requestParams.page_number = initialPageNumber;
-            }
             setWaiting(true);
-            const resMessage = await AgentAPI.askAssistant(requestParams);
-            setChatTitle("도우미와의 대화");
-            setChatId(resMessage.chat_id);
-            setPageNumber(initialPageNumber);
-            appendMessage({
-              content: resMessage.message,
-              role: "assistant",
-            });
+            if (!chatId) {
+              setChatTitle("도우미와의 대화");
+              const response = await AgentAPI.askAssistant({
+                message: message,
+                book_id: bookId,
+                page_number: pageNumber,
+              });
+              setChatId(response.chat_id);
+              setPageNumber(initialPageNumber);
+              appendMessage({
+                content: response.message,
+                role: "assistant",
+              });
+            } else {
+              const response = await AgentAPI.askAssistant({
+                message: message,
+                book_id: bookId,
+                page_number: pageNumber,
+                chat_id: chatId,
+              });
+              appendMessage({
+                content: response.message,
+                role: "assistant",
+              });
+            }
           } catch (error) {
             console.error(error);
           } finally {
